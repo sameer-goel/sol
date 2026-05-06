@@ -1,0 +1,607 @@
+/* ============================================================
+   ACT I · DIRECTOR'S CUT — build 20260506-1020
+   The Meaningful World · disposable / experimental
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #050a14;
+  --ink: #f4f1ea;
+  --ink-dim: rgba(244, 241, 234, 0.6);
+  --ink-faint: rgba(244, 241, 234, 0.3);
+  --warm: #ffc48a;        /* Inner · why */
+  --warm-bright: #ffe1b8;
+  --cool: #9fd0ff;        /* Artificial · how */
+  --cool-bright: #d4ecff;
+  --fused: #ffffff;       /* the meeting */
+  --earth-ring: #8ad1ff;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Driven from director.js */
+  --reveal-radius: 0px;
+  --reveal-feather: 28px;
+  --warm-bloom: 0;
+  --cool-bloom: 0;
+  --fused-bloom: 0;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+body { min-height: 100vh; }
+
+#scroll-spacer { height: 600vh; pointer-events: none; }
+
+/* ------------------------------------------------------------
+   Build stamp
+   ------------------------------------------------------------ */
+#build-stamp {
+  position: fixed;
+  top: 10px; right: 12px;
+  z-index: 100;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.4);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 10px;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ------------------------------------------------------------
+   Earth · masked by a scroll-driven porthole
+   ------------------------------------------------------------ */
+#scene-root {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  --mask-inner: calc(var(--reveal-radius) - var(--reveal-feather));
+  -webkit-mask-image: radial-gradient(
+    circle at 50% 50%,
+    #000 0,
+    #000 var(--mask-inner),
+    transparent var(--reveal-radius)
+  );
+  mask-image: radial-gradient(
+    circle at 50% 50%,
+    #000 0,
+    #000 var(--mask-inner),
+    transparent var(--reveal-radius)
+  );
+}
+#scene-root canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ------------------------------------------------------------
+   Starfield + bloom layers
+   ------------------------------------------------------------ */
+#stars-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+#bloom-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.bloom {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100vw;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) scale(0.6);
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  filter: blur(40px);
+  opacity: 0;
+  will-change: opacity, transform;
+}
+.bloom.warm {
+  background: radial-gradient(circle at center,
+    rgba(255, 196, 138, 0.45) 0%,
+    rgba(255, 170, 100, 0.18) 30%,
+    transparent 60%);
+  transform: translate(-68%, -50%) scale(calc(0.5 + var(--warm-bloom) * 0.8));
+  opacity: calc(var(--warm-bloom) * 0.9);
+}
+.bloom.cool {
+  background: radial-gradient(circle at center,
+    rgba(159, 208, 255, 0.45) 0%,
+    rgba(120, 180, 255, 0.18) 30%,
+    transparent 60%);
+  transform: translate(-32%, -50%) scale(calc(0.5 + var(--cool-bloom) * 0.8));
+  opacity: calc(var(--cool-bloom) * 0.9);
+}
+.bloom.fused {
+  background: radial-gradient(circle at center,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 224, 180, 0.3) 20%,
+    rgba(160, 210, 255, 0.2) 45%,
+    transparent 65%);
+  transform: translate(-50%, -50%) scale(calc(0.4 + var(--fused-bloom) * 1.4));
+  opacity: calc(var(--fused-bloom));
+  filter: blur(30px);
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center,
+    transparent 55%,
+    rgba(0, 0, 0, 0.6) 100%);
+}
+
+/* ------------------------------------------------------------
+   Atmosphere · dark deep space → bluish azure as Earth arrives.
+   Driven from director.js via --atmosphere (0..1).
+   ------------------------------------------------------------ */
+#atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 62%,
+      rgba(90, 170, 255, 0.28) 0%,
+      rgba(60, 130, 220, 0.14) 28%,
+      rgba(20, 60, 140, 0.06) 52%,
+      transparent 72%);
+  opacity: calc(var(--atmosphere, 0) * 0.95);
+  mix-blend-mode: screen;
+  transition: opacity 0.4s linear;
+}
+/* As atmosphere peaks, tint the base canvas from black → deep navy */
+html {
+  background: #050a14;
+}
+body {
+  background: linear-gradient(180deg,
+    rgba(6, 12, 28, calc(var(--atmosphere, 0) * 0.85)) 0%,
+    rgba(10, 22, 48, calc(var(--atmosphere, 0) * 0.85)) 100%),
+    #050a14;
+  background-attachment: fixed;
+}
+
+/* ------------------------------------------------------------
+   Split-screen stock footage · war (left) / help (right).
+   Appears only during the menu beat. Blurred, dimmed, so the
+   dial + menu stay king.
+   ------------------------------------------------------------ */
+#footage {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  opacity: var(--footage-op, 0);
+  transition: opacity 0.5s ease;
+}
+.footage-side {
+  position: relative;
+  overflow: hidden;
+}
+.footage-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.75) contrast(1.05) blur(1px);
+}
+.footage-video:not([src]) { display: none; }  /* hide until a real src is set */
+.footage-shade {
+  position: absolute;
+  inset: 0;
+}
+.footage-left .footage-shade {
+  background:
+    linear-gradient(90deg, rgba(5, 8, 18, 0.2) 0%, rgba(5, 8, 18, 0.85) 100%),
+    linear-gradient(180deg, rgba(60, 10, 10, 0.35) 0%, rgba(5, 8, 18, 0.6) 100%);
+}
+.footage-right .footage-shade {
+  background:
+    linear-gradient(270deg, rgba(5, 8, 18, 0.2) 0%, rgba(5, 8, 18, 0.85) 100%),
+    linear-gradient(180deg, rgba(20, 60, 40, 0.28) 0%, rgba(5, 8, 18, 0.6) 100%);
+}
+.footage-label {
+  position: absolute;
+  bottom: clamp(16vh, 22vh, 28vh);
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+}
+.footage-left  .footage-label { left: clamp(16px, 3vw, 36px); }
+.footage-right .footage-label { right: clamp(16px, 3vw, 36px); }
+
+/* Fallback when no footage file is present: a tonal wash so the
+   left/right split still reads (dim red on left, dim teal on right). */
+.footage-side::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--fallback, transparent);
+  opacity: 0.9;
+}
+.footage-left  { --fallback: radial-gradient(ellipse at 30% 50%, rgba(180, 40, 40, 0.22), transparent 60%); }
+.footage-right { --fallback: radial-gradient(ellipse at 70% 50%, rgba(80, 180, 130, 0.22), transparent 60%); }
+
+/* ------------------------------------------------------------
+   Stage · intelligences + petals
+   ------------------------------------------------------------ */
+#stage {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.intel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(300px, 34vw, 460px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+}
+
+.intel-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* The ring is just a soft halo, not a hard boundary — the emphasis
+   is the neurons/network inside, not the circle itself. */
+.intel-ring {
+  position: absolute;
+  inset: -2%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 60px rgba(255, 255, 255, 0.03);
+  pointer-events: none;
+  transition: opacity 0.8s ease, box-shadow 0.8s ease, border-color 0.8s ease;
+}
+.inner-intel .intel-ring {
+  box-shadow: inset 0 0 60px rgba(255, 196, 138, 0.08);
+}
+.artificial-intel .intel-ring {
+  box-shadow: inset 0 0 60px rgba(159, 208, 255, 0.08);
+}
+
+/* Spotlight via data-highlight on <html> */
+html[data-highlight="inner"] .inner-intel .intel-ring,
+html[data-highlight="both"]  .inner-intel .intel-ring {
+  border-color: rgba(255, 196, 138, 0.35);
+  box-shadow: inset 0 0 80px rgba(255, 196, 138, 0.2),
+              0 0 120px rgba(255, 170, 100, 0.35);
+}
+html[data-highlight="ai"]    .artificial-intel .intel-ring,
+html[data-highlight="both"]  .artificial-intel .intel-ring {
+  border-color: rgba(159, 208, 255, 0.35);
+  box-shadow: inset 0 0 80px rgba(159, 208, 255, 0.2),
+              0 0 120px rgba(100, 170, 255, 0.35);
+}
+
+/* ------------------------------------------------------------
+   Petals · one-at-a-time solution card above Earth
+   Earth itself is the rotating knob; this is the card that
+   surfaces the active solution. No ring, no overlap.
+   ------------------------------------------------------------ */
+.petal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(180px, 22vw, 280px);
+  padding: 14px 22px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%) scale(0.4);
+  opacity: 0;
+  border: 1px solid color-mix(in oklab, var(--accent) 55%, white 15%);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklab, var(--accent) 14%, rgba(10, 14, 24, 0.72)) 0%,
+      color-mix(in oklab, var(--accent) 6%,  rgba(10, 14, 24, 0.82)) 100%);
+  box-shadow:
+    inset 0 0 24px color-mix(in oklab, var(--accent) 22%, transparent),
+    0 0 36px color-mix(in oklab, var(--accent) 35%, transparent),
+    0 6px 24px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  will-change: transform, opacity;
+}
+.petal.is-active {
+  box-shadow:
+    inset 0 0 28px color-mix(in oklab, var(--accent) 30%, transparent),
+    0 0 60px color-mix(in oklab, var(--accent) 55%, transparent),
+    0 8px 32px rgba(0, 0, 0, 0.6);
+  border-color: color-mix(in oklab, var(--accent) 75%, white 15%);
+}
+.petal span {
+  font-family: var(--sans);
+  font-size: clamp(13px, 1.05vw, 16px);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-align: center;
+  text-wrap: balance;
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.55);
+}
+
+/* ------------------------------------------------------------
+   Solutions dial · chrome below Earth
+   ------------------------------------------------------------ */
+#solutions-selector {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(28px, 6vh, 72px);
+  transform: translate(-50%, 0);
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(10, 14, 24, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: rgba(255, 255, 255, 0.9);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  will-change: opacity, transform;
+}
+
+.sel-arrow {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+.sel-arrow:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.25); }
+.sel-arrow:active { transform: scale(0.94); }
+.sel-arrow:focus-visible {
+  outline: 2px solid rgba(159, 208, 255, 0.7);
+  outline-offset: 2px;
+}
+
+.sel-dots {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.sel-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  border: none;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+.sel-dot:hover { background: rgba(255, 255, 255, 0.45); }
+.sel-dot.is-active {
+  background: #ffffff;
+  transform: scale(1.35);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+}
+.sel-dot:focus-visible {
+  outline: 2px solid rgba(159, 208, 255, 0.7);
+  outline-offset: 3px;
+}
+
+.sel-hint {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  pointer-events: none;
+}
+.sel-hint kbd {
+  display: inline-block;
+  margin: 0 1px;
+  padding: 1px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ------------------------------------------------------------
+   Narration · editorial type, one beat at a time
+   ------------------------------------------------------------ */
+#narration {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: clamp(36px, 7vh, 96px);
+}
+
+.beat {
+  position: absolute;
+  top: clamp(36px, 7vh, 96px);
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  opacity: 0;
+  max-width: min(880px, 86vw);
+  text-align: center;
+  will-change: opacity, transform;
+  pointer-events: none;
+}
+
+.beat .eyebrow {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 16px;
+}
+.beat[data-side="inner"] .eyebrow {
+  color: color-mix(in oklab, var(--warm) 85%, white 10%);
+  text-shadow: 0 0 14px rgba(255, 180, 100, 0.35);
+}
+.beat[data-side="ai"] .eyebrow {
+  color: color-mix(in oklab, var(--cool) 85%, white 10%);
+  text-shadow: 0 0 14px rgba(120, 180, 255, 0.35);
+}
+
+.beat .line {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(22px, 2.6vw, 40px);
+  line-height: 1.18;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.beat .sub {
+  margin-top: 16px;
+  font-family: var(--sans);
+  font-size: clamp(11px, 0.95vw, 14px);
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.beat em {
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Why · warm gradient */
+.beat em.why {
+  background: linear-gradient(100deg, var(--warm-bright) 0%, var(--warm) 55%, #ff9a4d 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 18px rgba(255, 180, 100, 0.45));
+}
+
+/* How · cool gradient */
+.beat em.how {
+  background: linear-gradient(100deg, var(--cool-bright) 0%, var(--cool) 55%, #5a9fff 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 18px rgba(120, 180, 255, 0.45));
+}
+
+/* Earth · fused, shimmering foil */
+.beat em.earth {
+  background: linear-gradient(100deg,
+    var(--warm-bright) 0%,
+    #ffffff 30%,
+    var(--cool-bright) 60%,
+    var(--cool) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: earth-foil 8s ease-in-out infinite;
+  filter: drop-shadow(0 0 26px rgba(255, 255, 255, 0.35));
+}
+@keyframes earth-foil {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+/* The climax beat sits centered in the viewport and gets the biggest type. */
+.beat.climax {
+  top: 50%;
+  transform: translate(-50%, -50%) translateY(12px);
+}
+.beat.climax .line {
+  font-size: clamp(36px, 5.4vw, 88px);
+  font-weight: 300;
+}
+
+/* ------------------------------------------------------------
+   Scroll cue · bottom center, fades out after first scroll
+   ------------------------------------------------------------ */
+#scroll-cue {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-faint);
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0.85;
+  animation: scroll-bob 2.4s ease-in-out infinite;
+  transition: opacity 0.8s ease;
+}
+#scroll-cue.hidden { opacity: 0; }
+@keyframes scroll-bob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #scroll-cue { animation: none; }
+  .beat em.earth { animation: none; }
+}
