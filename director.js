@@ -1,5 +1,5 @@
 /**
- * ACT I · DIRECTOR'S CUT — build 20260506-1020
+ * ACT I · DIRECTOR'S CUT — earth.v0.3
  * The Meaningful World
  *
  * One file, one director. Everything — the scroll loop, the two canvas
@@ -13,7 +13,111 @@
  * complaint.
  */
 
-console.info('[act1 director] build 20260506-1020');
+console.info('[act1 director] earth.v0.8');
+
+// ─── Pill bar visibility ──────────────────────────────────────────────
+// The pill bar is revealed once the user has actually reached the menu
+// phase — i.e. scrolled past the narrative and landed in the 7-category
+// experience. Driven from the frame loop below via the `--pills-ready`
+// class. This keeps it from peeking through during the prologue.
+(() => {
+  const bar = document.getElementById('lb-topbar');
+  if (!bar) return;
+  // Initial state: hidden. `Letterbox.render` toggles `.is-ready` based
+  // on scroll position, so nothing to do here at load time.
+})();
+
+// ─── Personalize the welcome line ──────────────────────────────────────
+// Priority:
+//   1. sessionStorage.__sg_visitor_name  (set by macOSTahoeLogin on submit)
+//   2. ?name= or ?for= URL param          (dev shortcut · login still writes it)
+//   3. localStorage sol.name               (legacy · kept for back-compat)
+//   4. 'Friend'                            (fallback)
+//
+// Runs on page load AND when the login fires 'sg:visitor-ready'. That event
+// is the authoritative "the user just typed their name" signal.
+(() => {
+  function readName() {
+    const fromSession = (() => {
+      try { return sessionStorage.getItem('__sg_visitor_name'); } catch { return null; }
+    })();
+    const url       = new URL(window.location.href);
+    const fromQuery = url.searchParams.get('name') || url.searchParams.get('for');
+    const fromLocal = (() => {
+      try { return localStorage.getItem('sol.name'); } catch { return null; }
+    })();
+    const name = (fromSession && fromSession.trim())
+              || (fromQuery   && fromQuery.trim())
+              || fromLocal
+              || 'Friend';
+    if (fromQuery) {
+      try { localStorage.setItem('sol.name', fromQuery.trim()); } catch {}
+    }
+    return name;
+  }
+  function paint(name) {
+    const nameEl   = document.getElementById('welcome-name');
+    const closerEl = document.getElementById('closer-name');
+    if (nameEl)   nameEl.textContent   = name;
+    if (closerEl) closerEl.textContent = name;
+  }
+  // Initial paint · uses whatever is already known (URL param, local storage)
+  paint(readName());
+  // When login dismisses, re-paint with the freshly-typed name
+  window.addEventListener('sg:visitor-ready', (ev) => {
+    const n = (ev && ev.detail && ev.detail.name) || readName();
+    paint(n);
+  });
+})();
+
+// ─── Scroll-progress HUD ─────────────────────────────────────────────
+// Displays the raw scroll percent + a phase label so we can point at
+// a specific moment ("at 34% please change X"). Tick marks are placed
+// at the same thresholds the director uses for narrative beats.
+const HUD = (() => {
+  const fill   = document.getElementById('hud-fill');
+  const pctEl  = document.getElementById('hud-pct');
+  const phaseEl= document.getElementById('hud-phase');
+  const marksEl= document.getElementById('hud-marks');
+  if (!fill) return { update: () => {} };
+
+  // Tick-mark positions (percent of full scroll)
+  const TICKS = [13, 30, 46, 55, 61, 62];  // intro→why→how→meet→climax→menu
+  marksEl.innerHTML = TICKS
+    .map(p => `<span style="top:${p}%"></span>`).join('');
+
+  // Phase boundaries matched to the NARRATION_BEATS + MENU_FULL
+  const PHASES = [
+    { max: 0.13, label: 'INTRO'   },
+    { max: 0.30, label: 'WHY'     },
+    { max: 0.46, label: 'HOW'     },
+    { max: 0.55, label: 'MEET'    },
+    { max: 0.60, label: 'CLIMAX'  },
+    { max: 0.67, label: 'WELCOME' },
+    // 0.67 → 0.94 : category menu. Label includes active category idx.
+  ];
+
+  function update(t) {
+    const pct = clamp(t * 100, 0, 100);
+    fill.style.setProperty('--scroll-pct', pct.toFixed(2));
+    pctEl.textContent = pct.toFixed(1) + '%';
+
+    let label = 'MENU';
+    for (const p of PHASES) {
+      if (t <= p.max) { label = p.label; break; }
+    }
+    if (t > 0.67 && t <= 0.93) {
+      const idx = (window.Letterbox?.index ?? 0) + 1;
+      label = `MENU · 0${idx}`;
+    } else if (t > 0.93 && t <= 0.97) {
+      label = 'CLOSER';
+    } else if (t > 0.97) {
+      label = 'FINALE';
+    }
+    phaseEl.textContent = label;
+  }
+  return { update };
+})();
 
 // ─── Tiny math kit ─────────────────────────────────────────────────────────
 
@@ -488,7 +592,13 @@ const NARRATION_BEATS = [
   // beat 4 · When they meet…    (beat 3 "half a story" removed)
   { start: 0.46, peakIn: 0.49, peakOut: 0.52, end: 0.55, side: 'both'  },
   // beat 5 · CLIMAX · a meaningful world of tomorrow.
-  { start: 0.54, peakIn: 0.56, peakOut: 0.58, end: 0.61, side: null    },
+  { start: 0.54, peakIn: 0.56, peakOut: 0.58, end: 0.60, side: null    },
+  // beat welcome · Welcome <name> to the Immersive Solutions Portfolio.
+  // Text stays at full opacity from 0.59 → 0.68; the sweep clip-path
+  // (driven separately below) is what animates it out during that band.
+  { start: 0.58, peakIn: 0.60, peakOut: 0.68, end: 0.70, side: null    },
+  // (closer removed — "Thank you + collaborate" lives in #finale-cta
+  // below so it stays attached to the CTAs as one cohesive unit.)
 ];
 
 const beatEls = Array.from(document.querySelectorAll('#narration .beat'));
@@ -517,14 +627,19 @@ function driveNarration(t) {
       if (op > 0.35 && beat.side) activeSide = beat.side;
     }
 
+    // Beats that want to sit vertically centered (full translate(-50%,-50%))
+    // versus those that sit at the narration top (only translateX(-50%)).
+    const isCentered = el.classList.contains('climax')
+                    || el.classList.contains('welcome');
+
     if (op < 0.01) {
       el.style.opacity = '0';
-      el.style.transform = el.classList.contains('climax')
+      el.style.transform = isCentered
         ? 'translate(-50%, -50%) translateY(22px) scale(0.95)'
         : 'translateX(-50%) translateY(22px) scale(0.95)';
     } else {
       el.style.opacity = op.toFixed(3);
-      if (el.classList.contains('climax')) {
+      if (isCentered) {
         el.style.transform = `translate(-50%, -50%) translateY(${y.toFixed(1)}px) scale(${scale.toFixed(3)})`;
       } else {
         el.style.transform = `translateX(-50%) translateY(${y.toFixed(1)}px) scale(${scale.toFixed(3)})`;
@@ -540,11 +655,22 @@ function driveNarration(t) {
 
 const GLOBE_KEYS = [
   // [t, lon, lat, zoom, lookOffset]
+  //   · Higher zoom = camera closer = Earth looks BIGGER
   [0.00,  -90,   18,   0.35,  0.30],
   [0.44,  -40,   10,   0.55,  0.12],
-  [0.56,    0,    0,   0.70,  0.00],
-  [0.62,    0,    0,   0.60,  0.00],
-  [1.00,    0,    0,   0.58,  0.00],
+  [0.56,    0,    0,   0.80,  0.00],
+  [0.62,    0,    0,   1.00,  0.00],
+  // Menu · camera hard in on Earth so it becomes an enormous presence.
+  // At zoom 1.7, Earth's rendered diameter ≈ 90% of viewport height.
+  // Paired with the DOM pan below, its right ~40% fills the left edge.
+  [0.72,    0,    0,   1.70,  0.00],
+  [0.92,    0,    0,   1.70,  0.00],
+  // Finale · camera pulls back so the closer + CTAs have a calm stage.
+  // Earth shrinks to a smaller centered presence instead of hulking
+  // over the viewport. Pan (below in driveEarth) also returns to 0
+  // so Earth recenters.
+  [0.97,    0,    0,   0.90,  0.00],
+  [1.00,    0,    0,   0.85,  0.00],
 ];
 
 function sampleKeys(keys, t) {
@@ -565,13 +691,23 @@ function sampleKeys(keys, t) {
 }
 
 // ─── Menu phase · letterbox timing ────────────────────────────────────
-// The spacer is 1300vh. Narrative takes t ∈ [0, 0.46], climax rides up to
-// 0.58, menu enters at 0.58, fully engaged by 0.62. From 0.62 → 1.00 the
-// 7 categories are mapped linearly to scroll — one category per 0.0543
-// of normalized progress (≈ 5.4% of total page scroll each).
-const MENU_ENTER = 0.58;   // letterbox starts to fade in
-const MENU_FULL  = 0.62;   // fully engaged, scroll now cycles categories
-const MENU_END   = 1.00;
+// Sequence:
+//   0.55 → 0.60  Climax line "A Meaningful World of Tomorrow."
+//   0.59 → 0.63  Welcome line READS (Earth center, text full)
+//   0.63 → 0.70  Welcome line SWEEPS out (Earth pans left, text wiped L→R)
+//   0.68 → 0.72  Letterbox menu fades in (short overlap keeps it seamless)
+//   0.72 → 1.00  Seven category bands (~4% each)
+const WELCOME_READ_START = 0.59;
+const WELCOME_READ_END   = 0.63;
+const WELCOME_SWEEP_END  = 0.70;
+const MENU_ENTER = 0.68;
+const MENU_FULL  = 0.72;
+// MENU_END = 0.94 leaves the final 0.94→1.00 range for the closer
+// beat + finale CTA. 7 categories fit inside (0.94-0.72)/7 ≈ 3.1% each.
+const MENU_END   = 0.94;
+const CLOSER_START = 0.94;
+const CLOSER_END   = 0.97;
+const CTA_START    = 0.97;
 
 function driveEarth(t) {
   const E = window.EarthScene;
@@ -584,15 +720,36 @@ function driveEarth(t) {
   const stepDeg = 360 / Math.max(1, (window.Letterbox?.count || 7));
   const extraLon = (window.Letterbox?.smoothIndex ?? 0) * -stepDeg * menuActive;
 
-  // Earth shifts left ~14% of the viewport during the menu so the
-  // roster + right stack have breathing room. Purely camera pan.
-  const lookOffsetMenu = lerp(k.lookOffset, -0.28, menuActive);
+  // Earth dock · horizontal DOM pan. During the menu phase Earth docks
+  // left (so only its right half shows). During the finale (t > 0.94)
+  // it recenters — pan returns to 0 so Earth sits calmly center-stage.
+  const sweepT = easeInOutCubic(range(t, WELCOME_READ_END, WELCOME_SWEEP_END));
+  const menuT  = easeInOutCubic(range(t, MENU_ENTER, MENU_FULL));
+  const dockPct = Math.max(sweepT, menuT);         // 0 → 1
+  // Recenter factor: 1.0 during menu, eases back to 0 by CLOSER_START
+  const recenter = 1 - easeInOutCubic(range(t, MENU_END, CLOSER_START + 0.01));
+  const pan = -0.45 * window.innerWidth * dockPct * recenter;
+  document.documentElement.style.setProperty('--earth-pan', `${pan.toFixed(1)}px`);
+
+  // ─── Earth geometry → content boundary ───────────────────────────
+  // Publish the exact pixel where Earth's visible right edge sits, so
+  // the content column can start flush against it without overlapping.
+  // Geometry:
+  //   Earth radius in px ≈ 0.45 × viewport height  (at our menu zoom)
+  //   Earth center X    = half viewport + pan       (pan is negative)
+  //   Earth right edge  = center X + radius
+  // The 0.45 factor is tuned empirically to match the rendered globe;
+  // bump it up if you ever raise zoom above 1.7 in GLOBE_KEYS.
+  const earthRadiusPx = 0.45 * window.innerHeight;
+  const earthCenterX  = 0.5 * window.innerWidth + pan;
+  const earthRightPx  = Math.max(0, earthCenterX + earthRadiusPx);
+  document.documentElement.style.setProperty('--earth-right-px', `${earthRightPx.toFixed(0)}px`);
 
   E.setCamera({
     lon:        k.lon + extraLon,
     lat:        k.lat,
     zoom:       k.zoom,
-    lookOffset: lookOffsetMenu,
+    lookOffset: k.lookOffset,       // keep vertical pan from keyframes
   });
   // Bright, hopeful tone once Earth is visible.
   E.setDayNight(lerp(0.9, 1.0, easeInOutCubic(range(t, 0.70, 0.90))));
@@ -658,12 +815,19 @@ function driveStage(t, time) {
   );
   root.setProperty('--atmosphere', atmosphere.toFixed(3));
 
-  // ─── Vignette · fade it out in the menu beat so Earth can breathe ───
+  // ─── Vignette · fade it out as menu takes over ───
   const menuT = easeInOutCubic(range(t, MENU_ENTER, MENU_FULL));
   root.setProperty('--vignette-op', lerp(1.0, 0.25, menuT).toFixed(3));
 
+  // ─── Welcome sweep · Earth erases the welcome line L→R ───
+  // While t ∈ [WELCOME_READ_END, WELCOME_SWEEP_END], the welcome beat's
+  // clip-path left-inset grows from 0% → 100%. Outside that band, the
+  // sweep is clamped at either end so scroll-back un-erases cleanly.
+  const sweep = easeInOutCubic(range(t, WELCOME_READ_END, WELCOME_SWEEP_END));
+  root.setProperty('--sweep', sweep.toFixed(4));
+
   // ─── Narration scrim · fades out as the letterbox takes the stage ───
-  const scrim = 1 - easeInOutCubic(range(t, 0.50, 0.62));
+  const scrim = 1 - easeInOutCubic(range(t, 0.60, 0.70));
   root.setProperty('--narration-scrim', scrim.toFixed(3));
 
   // ─── Porthole (Earth reveal mask) ───
@@ -685,9 +849,11 @@ function driveStage(t, time) {
 // moments where accent color lights up.
 
 const Letterbox = (() => {
-  const root      = document.getElementById('letterbox');
-  const rosterEl  = document.getElementById('lb-roster');
-  const stackEl   = document.getElementById('lb-stack');
+  const root     = document.getElementById('letterbox');
+  const topbarEl = document.getElementById('lb-topbar');
+  const titleEl  = document.getElementById('lb-title');
+  const storyEl  = document.getElementById('lb-story');
+  const appsEl   = document.getElementById('lb-apps');
 
   // All seven glyph SVGs · authored at 64×64 viewBox, inherit currentColor.
   const GLYPHS = {
@@ -803,82 +969,126 @@ const Letterbox = (() => {
       : `<em>${name}</em>`;
   }
 
-  function buildRoster() {
-    rosterEl.innerHTML = '';
+  function buildTopbar() {
+    topbarEl.innerHTML = '';
     data.forEach((cat, i) => {
-      const li = document.createElement('li');
-      li.className = 'lb-item';
-      li.dataset.idx = i;
-      li.style.setProperty('--item-accent', cat.accent);
-      li.innerHTML = `
-        <span class="lb-num">${String(i + 1).padStart(2, '0')}</span>
-        <span class="lb-dot" aria-hidden="true"></span>
-        <span class="lb-label">${cat.name}</span>
-      `;
-      rosterEl.appendChild(li);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'lb-pill';
+      btn.dataset.idx = i;
+      btn.style.setProperty('--item-accent', cat.accent);
+      btn.textContent = cat.name;
+      topbarEl.appendChild(btn);
     });
   }
 
-  function buildStack() {
+  function buildTitle() {
+    const cat = data[targetIdx];
+    if (!cat) return;
+    titleEl.style.setProperty('--accent', cat.accent);
+    titleEl.innerHTML = `
+      <div class="lb-title-num">${String(targetIdx + 1).padStart(2, '0')} · Solution</div>
+      <div class="lb-title-name">${italicizeActive(cat.title || cat.name)}</div>
+    `;
+  }
+
+  // Tiny markdown parser for in-line emphasis within narration copy.
+  //   **word**  →  <span class="glow-word">word</span>   (accent glow)
+  //   *word*    →  <em>word</em>                          (italic serif)
+  // Kept intentionally small — no block-level markdown, just inline.
+  function fmt(s) {
+    if (!s) return '';
+    return s
+      .replace(/\*\*([^*]+)\*\*/g, '<span class="glow-word">$1</span>')
+      .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em class="soft-em">$2</em>');
+  }
+
+  function buildStory() {
+    const cat = data[targetIdx];
+    if (!cat) return;
+
+    // Three labeled glass panes · Problem / Analysis / Solution.
+    // Each pane has a pill-style label on the left (matching the top pill
+    // bar language) and a body of formatted copy on the right.
+    //
+    // Data source: we reuse `cat.opening` as the Problem, `cat.pivot` as
+    // the Analysis (the reframe line), and compose Solution from
+    // `cat.resolution` + (optional) `cat.closer` for a fuller answer.
+    const problem  = cat.opening    || cat.problem    || '';
+    const analysis = cat.pivot      || cat.analysis   || '';
+    const solution = [cat.resolution, cat.closer]
+      .filter(Boolean).map(s => s.trim()).join(' ');
+
+    const panes = [
+      { cls: 'lb-pane is-problem',  label: 'Problem',  text: problem  },
+      { cls: 'lb-pane is-analysis', label: 'Analysis', text: analysis },
+      { cls: 'lb-pane is-solution', label: 'Solution', text: solution },
+    ].filter(p => p.text);
+
+    storyEl.innerHTML = panes.map((p, i) => `
+      <article class="${p.cls}" style="--accent:${cat.accent}"
+               data-pane-index="${i}">
+        <span class="lb-pane-label">${p.label}</span>
+        <p class="lb-pane-body">${fmt(p.text)}</p>
+      </article>
+    `).join('');
+
+    // Cascade the accent color onto the atmosphere halo so Earth's rim
+    // picks up the category mood (item 3 of the director review).
+    document.documentElement.style.setProperty('--accent', cat.accent);
+  }
+
+  function buildApps() {
     const cat = data[targetIdx];
     if (!cat) return;
     document.documentElement.style.setProperty('--accent', cat.accent);
-    stackEl.style.setProperty('--accent', cat.accent);
-    stackEl.innerHTML = `
-      <header>
-        <div class="lb-glass"><div class="lb-glyph">${GLYPHS[cat.id] || ''}</div></div>
-        <div>
-          <div class="lb-name">${cat.name}</div>
-          <div class="lb-tag">${cat.tagline || ''}</div>
-        </div>
-      </header>
-      <ul class="lb-projects">
-        ${cat.projects.map(p =>
-          `<li><a href="${p.url}" target="_blank" rel="noopener">${p.label}</a></li>`
-        ).join('')}
-      </ul>
+    const count = cat.projects.length;
+    const plural = count === 1 ? 'Solution shipped' : `${count} Solutions shipped`;
+    appsEl.innerHTML = `
+      <div class="lb-apps-label">${plural}</div>
+      ${cat.projects.map(p => `
+        <a class="lb-app" href="${p.url}" target="_blank" rel="noopener"
+           style="--accent:${cat.accent}">
+          <div class="lb-app-glass">
+            <div class="lb-glyph">${GLYPHS[cat.id] || ''}</div>
+          </div>
+          <div class="lb-app-name">${p.label}</div>
+          <div class="lb-app-blurb">${p.blurb || ''}</div>
+          <div class="lb-app-cta">
+            <span class="lb-app-tag">Live app</span>
+          </div>
+        </a>
+      `).join('')}
     `;
   }
 
   function applyActive() {
-    // Update roster DOM: active item gets italicized label + .is-active
-    const items = rosterEl.querySelectorAll('.lb-item');
-    items.forEach((li, i) => {
-      const cat = data[i];
-      const label = li.querySelector('.lb-label');
-      const isActive = i === targetIdx;
-      li.classList.toggle('is-active', isActive);
-      label.innerHTML = isActive ? italicizeActive(cat.name) : cat.name;
-    });
-    buildStack();
-    // Fire the lock-on pulse · glow for ~1.2s then back to matte
+    // Top pills: mark the active one
+    const pills = topbarEl.querySelectorAll('.lb-pill');
+    pills.forEach((btn, i) => btn.classList.toggle('is-active', i === targetIdx));
+    buildTitle();
+    buildStory();
+    buildApps();
     firePulse();
   }
 
   function firePulse() {
-    const activeItem = rosterEl.querySelector('.lb-item.is-active');
-    if (activeItem) {
-      activeItem.classList.remove('lb-pulse');
-      // Force reflow so the class re-add restarts the animation cleanly
-      void activeItem.offsetWidth;
-      activeItem.classList.add('lb-pulse');
-      setTimeout(() => activeItem.classList.remove('lb-pulse'), 1300);
+    const activePill = topbarEl.querySelector('.lb-pill.is-active');
+    for (const el of [activePill, titleEl, storyEl, appsEl]) {
+      if (!el) continue;
+      el.classList.remove('lb-pulse');
+      void el.offsetWidth;
+      el.classList.add('lb-pulse');
+      setTimeout(() => el.classList.remove('lb-pulse'), 1300);
     }
-    stackEl.classList.remove('lb-pulse');
-    void stackEl.offsetWidth;
-    stackEl.classList.add('lb-pulse');
-    setTimeout(() => stackEl.classList.remove('lb-pulse'), 1300);
   }
 
-  // Allow clicking a roster item as an alternative to scroll; we clamp
-  // the page scroll to the corresponding band so the rest of the machine
-  // (Earth rotation, accents) follows.
-  rosterEl.addEventListener('click', (ev) => {
-    const li = ev.target.closest('.lb-item');
-    if (!li) return;
-    const i = Number(li.dataset.idx);
+  // Clicking a top pill smooth-scrolls to the corresponding menu band
+  topbarEl.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.lb-pill');
+    if (!btn) return;
+    const i = Number(btn.dataset.idx);
     const max = document.body.scrollHeight - window.innerHeight;
-    // Scroll to the midpoint of this category's band
     const band = (MENU_END - MENU_FULL) / data.length;
     const targetT = MENU_FULL + band * (i + 0.5);
     window.scrollTo({ top: targetT * max, behavior: 'smooth' });
@@ -887,15 +1097,32 @@ const Letterbox = (() => {
   // Load live data if present
   fetch('./solutions.json', { cache: 'no-cache' })
     .then(r => r.ok ? r.json() : null)
-    .then(d => { if (d) data = d; buildRoster(); applyActive(); })
-    .catch(() => { buildRoster(); applyActive(); });
+    .then(d => {
+      if (d) data = d;
+      buildTopbar(); applyActive();
+    })
+    .catch(() => { buildTopbar(); applyActive(); });
 
   // ─── Per-frame tick ───
   function render(t) {
-    // Fade the entire letterbox in during the menu entry range
-    const op = easeInOutCubic(range(t, MENU_ENTER, MENU_FULL));
+    // Fade the entire letterbox in during the menu entry range, and OUT
+    // again past MENU_END so the closer beat and finale CTAs have clean
+    // stage with no category content lingering underneath.
+    const fadeIn  = easeInOutCubic(range(t, MENU_ENTER, MENU_FULL));
+    const fadeOut = easeInOutCubic(range(t, MENU_END,   CLOSER_START + 0.01));
+    const op = clamp(fadeIn - fadeOut, 0, 1);
     root.style.opacity = op.toFixed(3);
     root.setAttribute('data-active', op > 0.9 ? 'true' : 'false');
+
+    // Pill bar · only reveal once all 7 categories are actually on stage,
+    // and hide again when we cross into the closer/finale.
+    const pillsVisible = fadeIn > 0.9 && t < MENU_END;
+    topbarEl.classList.toggle('is-ready', pillsVisible);
+
+    // Tahoe header · stays hidden through the entire journey, reveals
+    // only once the user has completed the scroll (t > 0.97). This is
+    // the "arrived at the desktop" moment.
+    document.documentElement.classList.toggle('is-desktop', t > 0.97);
 
     // Map scroll → active index across the menu band
     if (t >= MENU_FULL) {
@@ -912,6 +1139,26 @@ const Letterbox = (() => {
       // Smooth index for Earth rotation uses the raw continuous position
       // so the globe tweens fluidly even while the roster snaps.
       currentIdx = smoothDamp(currentIdx, clamped, idxVel, 0.28, 1 / 60);
+
+      // ─── Sub-progress inside the current category (0→1) ───
+      // Drives pane-by-pane scroll reveal so Problem → Analysis →
+      // Solution unlock as the user scrolls through the category, and
+      // the apps row joins near the end of the band.
+      const subT = clamped - newTarget;          // 0 → 1 within the band
+      const reveal = {
+        problem:  subT > 0.05,
+        analysis: subT > 0.35,
+        solution: subT > 0.60,
+        apps:     subT > 0.80,
+      };
+      const panes = storyEl.querySelectorAll('.lb-pane');
+      panes.forEach((p) => {
+        const kind = p.classList.contains('is-problem')  ? 'problem'
+                   : p.classList.contains('is-analysis') ? 'analysis'
+                   :                                        'solution';
+        p.classList.toggle('is-revealed', reveal[kind]);
+      });
+      appsEl.classList.toggle('is-revealed', reveal.apps);
     } else {
       // Before menu engages, keep index at 0 for Earth continuity
       currentIdx = smoothDamp(currentIdx, 0, idxVel, 0.28, 1 / 60);
@@ -932,6 +1179,176 @@ const Letterbox = (() => {
 
 // Expose for dev console / the earth camera
 window.Letterbox = Letterbox;
+
+
+// ─── Finale CTA · end-of-scroll state ─────────────────────────────────
+// Appears once the scroll crosses CTA_START (≈0.97). Three buttons:
+//   · cta-email   → Drop Sameer a message (mailto, Base64-protected)
+//   · cta-team    → Meet the team behind (opens team modal · Phase D)
+//   · cta-replay  → Replay the experience (via window.sgReplay)
+//
+// Email protection approach:
+//   The address never exists as plaintext in the DOM, JSON, or any
+//   global variable. It lives in TWO base64 strings split at the '@'
+//   boundary, concatenated+decoded only inside the click handler.
+//   After the mailto fires, the decoded string goes out of scope.
+//   Not bulletproof against a determined headless scraper that would
+//   simulate the click, but breaks all regex-level and casual scrapers.
+
+const Finale = (() => {
+  const el       = document.getElementById('finale-cta');
+  const emailBtn = document.getElementById('cta-email');
+  const teamBtn  = document.getElementById('cta-team');
+  const replayBtn= document.getElementById('cta-replay');
+  if (!el) return { update: () => {} };
+
+  // sameer.goel@outlook.com — split at the '@' so regex over the JS
+  // source cannot reconstruct it without executing the decode step.
+  const E_LOCAL  = 'c2FtZWVyLmdvZWw=';     // → "sameer.goel"
+  const E_DOMAIN = 'b3V0bG9vay5jb20=';     // → "outlook.com"
+
+  function buildMailtoUrl() {
+    // Decode only at click time, locally scoped. Do NOT assign to window
+    // or keep a module-level reference to the decoded string.
+    const local  = atob(E_LOCAL);
+    const domain = atob(E_DOMAIN);
+    const addr   = local + '@' + domain;
+    const subject = encodeURIComponent('Opportunity');
+    const body    = encodeURIComponent(
+      "Hi Sameer,\n\n" +
+      "I came across your Immersive Solutions Portfolio and wanted to reach out.\n\n"
+    );
+    return 'mailto:' + addr + '?subject=' + subject + '&body=' + body;
+  }
+
+  if (emailBtn) {
+    emailBtn.addEventListener('click', () => {
+      // Invoke the mail handler without navigating the portfolio tab.
+      // Assigning to window.location triggers Chrome's "state for
+      // intermediate websites may be deleted" warning because the tab
+      // is treated as a navigation target even though the OS mail
+      // client grabs the mailto URL. An anchor click with no target
+      // lets the browser hand off to the mail handler cleanly.
+      const a = document.createElement('a');
+      a.href = buildMailtoUrl();
+      a.rel = 'noopener';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Clean up immediately so the anchor isn't left in the DOM.
+      setTimeout(() => a.remove(), 0);
+    });
+  }
+
+  if (teamBtn) {
+    teamBtn.addEventListener('click', () => {
+      // Phase D will wire this to the team modal. For now, fire a custom
+      // event so Phase D's code can listen without edits here.
+      window.dispatchEvent(new CustomEvent('sg:team-open'));
+    });
+  }
+
+  if (replayBtn) {
+    replayBtn.addEventListener('click', () => {
+      // Keep the name; clear only the intro-done flag so the lock
+      // screen shows again and replays the whole journey.
+      if (typeof window.sgReplay === 'function') {
+        window.sgReplay();
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  }
+
+  function update(t) {
+    const shouldShow = t > CTA_START;
+    el.classList.toggle('is-visible', shouldShow);
+    el.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+  }
+
+  return { update };
+})();
+
+
+// ─── Team modal · macOS-style dialog ──────────────────────────────────
+// Opens when the user clicks "Meet the team behind" (or anywhere else
+// that dispatches the `sg:team-open` event). Shows 6 team members as
+// cards, each with name, role, and 3 keyword chips. Closes on:
+//   · red traffic-light click
+//   · Esc key
+//   · click outside the window (on the backdrop)
+
+const TeamModal = (() => {
+  const overlay = document.getElementById('team-overlay');
+  const body    = document.getElementById('team-body');
+  const closeLight = document.getElementById('team-close-light');
+  if (!overlay || !body) return { open: () => {}, close: () => {} };
+
+  let members = [];
+  let loaded  = false;
+
+  function render() {
+    if (!members.length) return;
+    body.innerHTML = members.map((m) => {
+      const kindLabel = m.kind === 'human' ? 'Human' : 'Agent';
+      return `
+        <article class="team-card is-${m.kind}">
+          <div class="team-card-head">
+            <div class="team-card-name">${m.name}</div>
+            <div class="team-card-kind">${kindLabel}</div>
+          </div>
+          <div class="team-card-role">${m.role || ''}</div>
+          <div class="team-card-chips">
+            ${(m.keywords || []).map(k => `<span class="team-chip">${k}</span>`).join('')}
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function ensureLoaded() {
+    if (loaded) return Promise.resolve();
+    return fetch('./team.json', { cache: 'no-cache' })
+      .then(r => r.ok ? r.json() : [])
+      .then(d => { members = Array.isArray(d) ? d : []; loaded = true; render(); })
+      .catch(() => { members = []; loaded = true; });
+  }
+
+  function open() {
+    ensureLoaded().then(() => {
+      overlay.classList.add('is-open');
+      overlay.setAttribute('aria-hidden', 'false');
+      // Lock page scroll while the modal is open so the experience
+      // underneath doesn't scroll around behind it.
+      document.body.style.overflow = 'hidden';
+    });
+  }
+  function close() {
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  // Red traffic-light click closes
+  if (closeLight) closeLight.addEventListener('click', close);
+
+  // Backdrop click closes · but clicks INSIDE the window should not
+  overlay.addEventListener('click', (ev) => {
+    if (ev.target === overlay) close();
+  });
+
+  // Esc closes
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && overlay.classList.contains('is-open')) close();
+  });
+
+  // External trigger · fired by the Finale CTA
+  window.addEventListener('sg:team-open', open);
+
+  return { open, close };
+})();
+
+window.TeamModal = TeamModal;
 
 
 // ─── Scroll → smoothed progress ────────────────────────────────────────
@@ -979,6 +1396,8 @@ function frame(time) {
   driveEarth(smoothT);
   driveStage(smoothT, time);
   driveNarration(smoothT);
+  HUD.update(smoothT);
+  Finale.update(smoothT);
 
   requestAnimationFrame(frame);
 }
