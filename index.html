@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Act I · Director's Cut — The Meaningful World</title>
 
-  <link rel="stylesheet" href="styles.css?build=v08-e">
+  <link rel="stylesheet" href="styles.css?build=v09-c">
 
   <script type="importmap">
   {
@@ -20,7 +20,7 @@
 
   <!-- Version badge · shows which iteration of the app you're viewing.
        Bumped on meaningful layout/feature changes, not on every commit. -->
-  <div id="version" aria-hidden="true">earth.v0.8</div>
+  <div id="version" aria-hidden="true">earth.v0.9</div>
 
   <!-- Scroll-progress HUD · vertical bar + percentage on the right edge.
        Dev/guidance tool so we can reference "at 67%, do X". -->
@@ -102,8 +102,32 @@
        One beat visible at a time. Climax beat is centered & large.
        ======================================================== -->
   <div id="narration" aria-live="polite">
-    <div class="beat" data-beat="0">
+    <div class="beat hero" data-beat="0">
       <div class="line">Two Intelligence for <em class="mission">One Mission.</em></div>
+      <div class="hero-actions">
+        <button type="button" class="hero-btn is-primary" id="hero-autoplay">
+          <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true">
+            <path class="icon-play" d="M3 2 L11 7 L3 12 Z" fill="currentColor"/>
+            <g class="icon-pause" style="display:none">
+              <rect x="3" y="2" width="3" height="10" fill="currentColor"/>
+              <rect x="8" y="2" width="3" height="10" fill="currentColor"/>
+            </g>
+          </svg>
+          <span class="hero-btn-label">Autoplay the story</span>
+        </button>
+        <button type="button" class="hero-btn" id="hero-scroll">
+          <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true">
+            <path d="M7 2 V11 M3 7 L7 11 L11 7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="hero-btn-label">Scroll to begin</span>
+        </button>
+        <button type="button" class="hero-btn" id="hero-jump">
+          <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true">
+            <path d="M2 7 H11 M7 3 L11 7 L7 11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="hero-btn-label">Jump to solutions</span>
+        </button>
+      </div>
     </div>
     <div class="beat" data-beat="1" data-side="inner">
       <div class="eyebrow">Inner intelligence</div>
@@ -156,7 +180,11 @@
       </div>
     </div>
     <div class="finale-actions">
-      <button type="button" class="cta cta-primary cta-hero" id="cta-email">
+      <!-- Primary CTA · opens the user's mail client. If they don't
+           have one configured, the email subtext below gives them the
+           address they can copy-paste. -->
+      <a class="cta cta-primary cta-hero" id="cta-email"
+         href="mailto:sameer.goel@outlook.com?subject=Opportunity&body=Hi%20Sameer%2C%0A%0AI%20came%20across%20your%20Immersive%20Solutions%20Portfolio%20and%20wanted%20to%20reach%20out.%0A%0A">
         <span class="cta-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
             <path d="M4 8l8 5 8-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -164,7 +192,17 @@
           </svg>
         </span>
         <span class="cta-label">Drop Sameer a message</span>
-      </button>
+      </a>
+      <!-- Email address as subtext so users can copy it even when no
+           mail client is configured. -->
+      <div class="cta-subtext">
+        <span>or copy</span>
+        <button type="button" class="cta-email-copy" id="cta-email-copy"
+                data-email="sameer.goel@outlook.com"
+                aria-label="Copy Sameer's email address">
+          sameer.goel@outlook.com
+        </button>
+      </div>
       <button type="button" class="cta cta-secondary" id="cta-team">
         <span class="cta-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
@@ -205,9 +243,11 @@
     </div>
   </div>
 
-  <!-- Subtle scroll cue, bottom center. Fades after first scroll. -->
+  <!-- Scroll cue · subtle text + chevron at bottom center. Fades after
+       first scroll. Autoplay lives inside the hero above so the user
+       always has a clear path from the landing screen. -->
   <div id="scroll-cue" aria-hidden="true">
-    <span>scroll</span>
+    <span class="cue-text">scroll to reveal</span>
     <svg viewBox="0 0 12 16" width="12" height="16">
       <path d="M6 1 V15 M1 10 L6 15 L11 10" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
@@ -229,7 +269,7 @@
 
   <!-- Earth engine (reused from the canonical tree) -->
   <script type="module" src="./earth-scene.js"></script>
-  <script src="director.js?build=v08-e"></script>
+  <script src="director.js?build=v09-c"></script>
 
 </body>
 </html>
