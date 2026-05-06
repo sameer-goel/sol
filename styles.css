@@ -40,7 +40,7 @@ html, body {
 
 body { min-height: 100vh; }
 
-#scroll-spacer { height: 600vh; pointer-events: none; }
+#scroll-spacer { height: 1300vh; pointer-events: none; }
 
 /* ------------------------------------------------------------
    Build stamp
@@ -121,19 +121,19 @@ body { min-height: 100vh; }
 }
 .bloom.warm {
   background: radial-gradient(circle at center,
-    rgba(255, 196, 138, 0.45) 0%,
-    rgba(255, 170, 100, 0.18) 30%,
+    rgba(255, 196, 138, 0.28) 0%,
+    rgba(255, 170, 100, 0.10) 30%,
     transparent 60%);
   transform: translate(-68%, -50%) scale(calc(0.5 + var(--warm-bloom) * 0.8));
-  opacity: calc(var(--warm-bloom) * 0.9);
+  opacity: calc(var(--warm-bloom) * 0.55);
 }
 .bloom.cool {
   background: radial-gradient(circle at center,
-    rgba(159, 208, 255, 0.45) 0%,
-    rgba(120, 180, 255, 0.18) 30%,
+    rgba(159, 208, 255, 0.28) 0%,
+    rgba(120, 180, 255, 0.10) 30%,
     transparent 60%);
   transform: translate(-32%, -50%) scale(calc(0.5 + var(--cool-bloom) * 0.8));
-  opacity: calc(var(--cool-bloom) * 0.9);
+  opacity: calc(var(--cool-bloom) * 0.55);
 }
 .bloom.fused {
   background: radial-gradient(circle at center,
@@ -159,35 +159,25 @@ body { min-height: 100vh; }
 }
 
 /* ------------------------------------------------------------
-   Atmosphere · dark deep space → bluish azure as Earth arrives.
-   Driven from director.js via --atmosphere (0..1).
+   Atmosphere · a tight rim right at Earth's edge, nothing more.
+   No ambient wash across the screen. Glow = layer elevation only.
    ------------------------------------------------------------ */
 #atmosphere {
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
+  /* Subtle top-of-Earth highlight · reads as rim light, not scene wash */
   background:
-    radial-gradient(ellipse at 50% 62%,
-      rgba(90, 170, 255, 0.28) 0%,
-      rgba(60, 130, 220, 0.14) 28%,
-      rgba(20, 60, 140, 0.06) 52%,
-      transparent 72%);
-  opacity: calc(var(--atmosphere, 0) * 0.95);
-  mix-blend-mode: screen;
+    radial-gradient(ellipse at 50% 55%,
+      rgba(120, 180, 255, 0.08) 0%,
+      transparent 22%);
+  opacity: calc(var(--atmosphere, 0) * 0.9);
   transition: opacity 0.4s linear;
 }
-/* As atmosphere peaks, tint the base canvas from black → deep navy */
-html {
-  background: #050a14;
-}
-body {
-  background: linear-gradient(180deg,
-    rgba(6, 12, 28, calc(var(--atmosphere, 0) * 0.85)) 0%,
-    rgba(10, 22, 48, calc(var(--atmosphere, 0) * 0.85)) 100%),
-    #050a14;
-  background-attachment: fixed;
-}
+/* Keep the canvas dark and clean. No body tinting. */
+html { background: #050a14; }
+body { background: #050a14; }
 
 /* ------------------------------------------------------------
    Split-screen stock footage · war (left) / help (right).
@@ -270,9 +260,9 @@ body {
 
 .intel {
   position: absolute;
-  top: 50%;
+  top: 54%;                 /* nudged down so no overlap with headline */
   left: 50%;
-  width: clamp(300px, 34vw, 460px);
+  width: clamp(260px, 28vw, 400px);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   will-change: transform, opacity;
@@ -292,175 +282,349 @@ body {
   position: absolute;
   inset: -2%;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 0 60px rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+  box-shadow: none;
   pointer-events: none;
   transition: opacity 0.8s ease, box-shadow 0.8s ease, border-color 0.8s ease;
 }
-.inner-intel .intel-ring {
-  box-shadow: inset 0 0 60px rgba(255, 196, 138, 0.08);
-}
-.artificial-intel .intel-ring {
-  box-shadow: inset 0 0 60px rgba(159, 208, 255, 0.08);
-}
+.inner-intel .intel-ring { box-shadow: none; }
+.artificial-intel .intel-ring { box-shadow: none; }
 
-/* Spotlight via data-highlight on <html> */
-html[data-highlight="inner"] .inner-intel .intel-ring,
-html[data-highlight="both"]  .inner-intel .intel-ring {
-  border-color: rgba(255, 196, 138, 0.35);
-  box-shadow: inset 0 0 80px rgba(255, 196, 138, 0.2),
-              0 0 120px rgba(255, 170, 100, 0.35);
+/* Spotlight only on the meet beat · kept off on solo beats so the
+   copy is never competing with a lit ring. */
+html[data-highlight="both"] .inner-intel .intel-ring {
+  border-color: rgba(255, 196, 138, 0.18);
+  box-shadow: 0 0 30px rgba(255, 170, 100, 0.08);
 }
-html[data-highlight="ai"]    .artificial-intel .intel-ring,
-html[data-highlight="both"]  .artificial-intel .intel-ring {
-  border-color: rgba(159, 208, 255, 0.35);
-  box-shadow: inset 0 0 80px rgba(159, 208, 255, 0.2),
-              0 0 120px rgba(100, 170, 255, 0.35);
+html[data-highlight="both"] .artificial-intel .intel-ring {
+  border-color: rgba(159, 208, 255, 0.18);
+  box-shadow: 0 0 30px rgba(100, 170, 255, 0.08);
 }
 
 /* ------------------------------------------------------------
-   Petals · one-at-a-time solution card above Earth
-   Earth itself is the rotating knob; this is the card that
-   surfaces the active solution. Minimal chrome so Earth's glow
-   and the card's color are the only two things alive on screen.
+   Letterbox menu · split-letter layout
+   Left: the 7 roster list (active = cinematic serif).
+   Right: glass stack with glyph tile + name + tagline + links.
+   Elevation-only aesthetic — glow reserved for hover + the
+   activation pulse that fires right after each scroll-rotation.
    ------------------------------------------------------------ */
-.petal {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: clamp(180px, 22vw, 280px);
-  padding: 12px 22px;
-  border-radius: 999px;
-  transform: translate(-50%, -50%) scale(0.4);
-  opacity: 0;
-  border: 1px solid color-mix(in oklab, var(--accent) 45%, rgba(255, 255, 255, 0.2));
-  background:
-    linear-gradient(180deg,
-      color-mix(in oklab, var(--accent) 10%, rgba(10, 14, 24, 0.55)) 0%,
-      color-mix(in oklab, var(--accent) 4%,  rgba(10, 14, 24, 0.65)) 100%);
-  box-shadow:
-    0 0 24px color-mix(in oklab, var(--accent) 28%, transparent),
-    0 4px 16px rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: box-shadow 0.35s ease, border-color 0.35s ease;
-  will-change: transform, opacity;
-}
-.petal.is-active {
-  box-shadow:
-    0 0 36px color-mix(in oklab, var(--accent) 45%, transparent),
-    0 6px 24px rgba(0, 0, 0, 0.4);
-  border-color: color-mix(in oklab, var(--accent) 65%, white 20%);
-}
-.petal span {
-  font-family: var(--sans);
-  font-size: clamp(13px, 1.05vw, 16px);
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
-  text-align: center;
-  text-wrap: balance;
-  color: rgba(255, 255, 255, 0.96);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
-}
-
-/* ------------------------------------------------------------
-   Solutions dial · chrome below Earth
-   ------------------------------------------------------------ */
-#solutions-selector {
+#letterbox {
   position: fixed;
-  left: 50%;
-  bottom: clamp(28px, 6vh, 72px);
-  transform: translate(-50%, 0);
+  inset: 0;
   z-index: 6;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: rgba(10, 14, 24, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  color: rgba(255, 255, 255, 0.9);
+  pointer-events: none;
   opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.4s ease;
-  will-change: opacity, transform;
+  transition: opacity 0.5s ease;
 }
+#letterbox[data-active="true"] { pointer-events: auto; }
 
-.sel-arrow {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.85);
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
-}
-.sel-arrow:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.25); }
-.sel-arrow:active { transform: scale(0.94); }
-.sel-arrow:focus-visible {
-  outline: 2px solid rgba(159, 208, 255, 0.7);
-  outline-offset: 2px;
-}
-
-.sel-dots {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-.sel-dot {
-  width: 8px;
-  height: 8px;
-  padding: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.22);
-  border: none;
-  cursor: pointer;
-  transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
-}
-.sel-dot:hover { background: rgba(255, 255, 255, 0.45); }
-.sel-dot.is-active {
-  background: #ffffff;
-  transform: scale(1.35);
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
-}
-.sel-dot:focus-visible {
-  outline: 2px solid rgba(159, 208, 255, 0.7);
-  outline-offset: 3px;
-}
-
-.sel-hint {
+.lb-inner {
   position: absolute;
-  top: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-family: var(--sans);
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  pointer-events: none;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) auto;
+  align-items: center;
+  gap: clamp(40px, 6vw, 120px);
+  padding: 0 clamp(28px, 6vw, 96px);
 }
-.sel-hint kbd {
-  display: inline-block;
-  margin: 0 1px;
-  padding: 1px 5px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 4px;
+
+/* --- Roster (left) --- */
+.lb-roster {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: clamp(8px, 1vh, 16px);
+  max-width: 20ch;
+}
+.lb-item {
+  --item-accent: rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  cursor: pointer;
+  color: var(--ink-faint);
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(15px, 1.4vw, 20px);
+  letter-spacing: -0.005em;
+  line-height: 1.12;
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  pointer-events: auto;
+  transition:
+    color 0.35s ease,
+    font-size 0.55s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.lb-item:hover {
+  color: var(--ink-dim);
+  transform: translateX(4px);
+}
+.lb-item .lb-num {
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 9px;
-  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.18em;
+  color: var(--ink-faint);
+  opacity: 0.55;
+  flex-shrink: 0;
+  padding-top: 4px;
+  transition: color 0.35s ease, opacity 0.35s ease, font-size 0.45s ease;
+}
+.lb-item .lb-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  flex-shrink: 0;
+  margin-bottom: 4px;
+  transition: background 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+/* Active roster item · cinematic promotion · no ambient glow, only a
+   lift and accent tint. The .lb-pulse class is added by JS for ~1.2s
+   right after a rotation lands, firing the signature glow burst. */
+.lb-item.is-active {
+  color: color-mix(in oklab, var(--item-accent) 22%, white 78%);
+  font-size: clamp(36px, 5.2vw, 78px);
+  font-weight: 300;
+  line-height: 0.96;
+  letter-spacing: -0.02em;
+  margin: clamp(4px, 0.8vh, 10px) 0;
+}
+.lb-item.is-active em {
+  font-style: italic;
+  color: color-mix(in oklab, var(--item-accent) 60%, white 40%);
+}
+.lb-item.is-active .lb-num {
+  font-size: 10px;
+  color: color-mix(in oklab, var(--item-accent) 70%, white 25%);
+  opacity: 1;
+  padding-top: 16px;
+}
+.lb-item.is-active .lb-dot {
+  background: var(--item-accent);
+  box-shadow: inset 0 0 0 1px var(--item-accent);
+  transform: scale(1.25);
+}
+/* Activation pulse · fires for ~1.2s after rotation lock-on */
+.lb-item.is-active.lb-pulse {
+  animation: lb-item-pulse 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.lb-item.is-active.lb-pulse .lb-dot {
+  animation: lb-dot-pulse 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes lb-item-pulse {
+  0%   { text-shadow: 0 0 0 transparent; }
+  40%  { text-shadow: 0 0 24px color-mix(in oklab, var(--item-accent) 55%, transparent); }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+@keyframes lb-dot-pulse {
+  0%   { box-shadow: 0 0 0 transparent, inset 0 0 0 1px var(--item-accent); }
+  40%  { box-shadow: 0 0 16px var(--item-accent), inset 0 0 0 1px var(--item-accent); }
+  100% { box-shadow: 0 0 0 transparent, inset 0 0 0 1px var(--item-accent); }
+}
+
+/* --- Right stack (glass panel with glyph + links) --- */
+.lb-stack {
+  width: min(360px, 32vw);
+  padding: 24px;
+  border-radius: 22px;
+  background:
+    linear-gradient(160deg,
+      color-mix(in oklab, var(--accent, #ffffff) 7%, rgba(14, 18, 32, 0.72)) 0%,
+      color-mix(in oklab, var(--accent, #ffffff) 3%, rgba(10, 14, 24, 0.88)) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  /* Elevation only · no colored bloom around the panel */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 16px 40px rgba(0, 0, 0, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  pointer-events: auto;
+}
+
+.lb-stack header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.lb-glass {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(160deg,
+      color-mix(in oklab, var(--accent) 14%, rgba(16, 22, 38, 0.72)) 0%,
+      color-mix(in oklab, var(--accent) 6%,  rgba(10, 14, 24, 0.88)) 100%);
+  border: 1px solid color-mix(in oklab, var(--accent) 22%, rgba(255, 255, 255, 0.1));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 8px 18px rgba(0, 0, 0, 0.4);
+  transition: box-shadow 0.35s ease, border-color 0.35s ease;
+}
+.lb-stack.lb-pulse .lb-glass {
+  /* Brief lock-on glow only while the pulse class is present */
+  animation: lb-glass-pulse 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes lb-glass-pulse {
+  0%   { box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 8px 18px rgba(0,0,0,0.4), 0 0 0 transparent; }
+  40%  { box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 22px rgba(0,0,0,0.5),
+                     0 0 32px color-mix(in oklab, var(--accent) 55%, transparent); }
+  100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 8px 18px rgba(0,0,0,0.4), 0 0 0 transparent; }
+}
+
+.lb-glyph {
+  width: 36px;
+  height: 36px;
+  color: color-mix(in oklab, var(--accent) 70%, white 25%);
+}
+.lb-glyph svg { width: 100%; height: 100%; overflow: visible; }
+.lb-glyph svg * {
+  fill: none; stroke: currentColor; stroke-width: 1.5px;
+  stroke-linecap: round; stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.lb-glyph svg .fill { fill: currentColor; stroke: none; }
+.lb-glyph svg .text {
+  fill: currentColor; stroke: none;
+  font-family: var(--sans); font-weight: 600; letter-spacing: 0.04em;
+}
+.lb-glyph svg .label {
+  fill: currentColor; stroke: none;
+  font-family: var(--sans); font-weight: 500; letter-spacing: 0.18em;
+  opacity: 0.72; text-transform: uppercase;
+}
+
+.lb-name {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.14;
+  color: var(--ink);
+}
+.lb-tag {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: 4px;
+}
+
+.lb-projects {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.lb-projects a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: var(--ink);
+  text-decoration: none;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
+}
+.lb-projects a:hover {
+  /* Glow only on hover · the whole point of this layout */
+  background: color-mix(in oklab, var(--accent) 10%, rgba(255, 255, 255, 0.04));
+  border-color: color-mix(in oklab, var(--accent) 35%, rgba(255, 255, 255, 0.12));
+  box-shadow: 0 0 18px color-mix(in oklab, var(--accent) 22%, transparent);
+  transform: translateX(3px);
+}
+.lb-projects a::after {
+  content: '↗';
+  opacity: 0.5;
+  font-size: 12px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.lb-projects a:hover::after { opacity: 1; transform: translate(2px, -2px); }
+
+/* ------------------------------------------------------------
+   Glyph motion · one language, different motion per soul.
+   Idle tempo only · hover speeds up on an individual basis
+   (Letterbox keeps the tile visible across the menu, so we
+   don't have a "performance" tempo here — just calm idle.)
+   ------------------------------------------------------------ */
+.lb-glyph .glyph-sos .ring { animation: sos-ring-breathe 2.8s ease-in-out infinite; transform-origin: center; }
+@keyframes sos-ring-breathe { 0%,100%{opacity:.85} 50%{opacity:1} }
+.lb-glyph .glyph-sos .mark { opacity:.15; animation: sos-mark 2.8s steps(1,end) infinite; }
+.lb-glyph .glyph-sos .mark:nth-child(1) { animation-delay: 0.00s; }
+.lb-glyph .glyph-sos .mark:nth-child(2) { animation-delay: 0.25s; }
+.lb-glyph .glyph-sos .mark:nth-child(3) { animation-delay: 0.50s; }
+.lb-glyph .glyph-sos .mark:nth-child(4) { animation-delay: 0.90s; }
+.lb-glyph .glyph-sos .mark:nth-child(5) { animation-delay: 1.30s; }
+.lb-glyph .glyph-sos .mark:nth-child(6) { animation-delay: 1.70s; }
+.lb-glyph .glyph-sos .mark:nth-child(7) { animation-delay: 2.10s; }
+.lb-glyph .glyph-sos .mark:nth-child(8) { animation-delay: 2.35s; }
+.lb-glyph .glyph-sos .mark:nth-child(9) { animation-delay: 2.60s; }
+@keyframes sos-mark { 0%{opacity:.15} 6%{opacity:1} 18%{opacity:1} 30%{opacity:.15} 100%{opacity:.15} }
+
+.lb-glyph .glyph-mind .ring-outer { animation: g-spin 6s linear infinite; transform-origin: 32px 32px; }
+.lb-glyph .glyph-mind .ring-inner { animation: g-spin 4s linear infinite reverse; transform-origin: 32px 32px; }
+@keyframes g-spin { to { transform: rotate(360deg); } }
+
+.lb-glyph .glyph-binaural .pulse-l { transform-origin: 14px 28px; animation: ear-l 2.1s ease-in-out infinite; }
+.lb-glyph .glyph-binaural .pulse-r { transform-origin: 50px 28px; animation: ear-r 2.7s ease-in-out infinite; }
+@keyframes ear-l { 0%,100%{transform:scale(.9);opacity:.3} 50%{transform:scale(1.25);opacity:.95} }
+@keyframes ear-r { 0%,100%{transform:scale(.9);opacity:.3} 50%{transform:scale(1.25);opacity:.95} }
+
+.lb-glyph .glyph-agent .agent {
+  offset-path: circle(20px at 32px 32px);
+  offset-rotate: auto;
+  animation: g-orbit 4.5s linear infinite;
+}
+@keyframes g-orbit { from {offset-distance:0%} to {offset-distance:100%} }
+
+.lb-glyph .glyph-shield .spoke { stroke-dasharray: 10; animation: g-ripple 2.6s ease-in-out infinite; }
+.lb-glyph .glyph-shield .spoke:nth-child(n+3) { animation-delay: 0.3s; }
+@keyframes g-ripple { 0%{stroke-dashoffset:20;opacity:0} 40%{opacity:.95} 100%{stroke-dashoffset:-10;opacity:0} }
+
+.lb-glyph .glyph-book .spiral { transform-origin: 32px 32px; animation: g-breathe 6s ease-in-out infinite; }
+@keyframes g-breathe { 0%,100%{transform:rotate(0) scale(1)} 50%{transform:rotate(10deg) scale(1.03)} }
+
+.lb-glyph .glyph-flower .petal { transform-origin: 32px 38px; animation: g-bloom 4.5s ease-in-out infinite; }
+.lb-glyph .glyph-flower .petal:nth-of-type(1) { animation-delay: 0s; }
+.lb-glyph .glyph-flower .petal:nth-of-type(2) { animation-delay: 0.15s; }
+.lb-glyph .glyph-flower .petal:nth-of-type(3) { animation-delay: 0.3s;  }
+.lb-glyph .glyph-flower .petal:nth-of-type(4) { animation-delay: 0.45s; }
+.lb-glyph .glyph-flower .petal:nth-of-type(5) { animation-delay: 0.6s;  }
+@keyframes g-bloom {
+  0%   { transform: scale(.1) rotate(var(--a,0deg)); opacity: .12; }
+  40%  { opacity: .85; }
+  50%  { transform: scale(1) rotate(var(--a,0deg));  opacity: 1;   }
+  78%  { transform: scale(1) rotate(var(--a,0deg));  opacity: 1;   }
+  100% { transform: scale(.1) rotate(var(--a,0deg)); opacity: .12; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lb-glyph svg * { animation: none !important; }
 }
 
 /* ------------------------------------------------------------
    Narration · editorial type, one beat at a time
+   The copy is the hero. A subtle trailer-style letterbox scrim
+   sits behind it to guarantee legibility over anything below.
    ------------------------------------------------------------ */
 #narration {
   position: fixed;
@@ -471,6 +635,26 @@ html[data-highlight="both"]  .artificial-intel .intel-ring {
   align-items: flex-start;
   justify-content: center;
   padding-top: clamp(36px, 7vh, 96px);
+}
+
+/* Soft scrim behind the top beats · invisible but protects the type.
+   Only comes up when something visually noisy is behind it; stays off
+   on deep-space empty screens so the background doesn't feel heavy. */
+#narration::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: clamp(140px, 26vh, 300px);
+  background: linear-gradient(180deg,
+    rgba(5, 8, 18, 0.40) 0%,
+    rgba(5, 8, 18, 0.18) 55%,
+    rgba(5, 8, 18, 0.00) 100%);
+  pointer-events: none;
+  z-index: -1;
+  opacity: var(--narration-scrim, 1);
+  transition: opacity 0.4s ease;
 }
 
 .beat {
@@ -495,12 +679,11 @@ html[data-highlight="both"]  .artificial-intel .intel-ring {
   margin-bottom: 16px;
 }
 .beat[data-side="inner"] .eyebrow {
-  color: color-mix(in oklab, var(--warm) 85%, white 10%);
-  text-shadow: 0 0 14px rgba(255, 180, 100, 0.35);
+  color: color-mix(in oklab, var(--warm) 88%, white 10%);
+  /* No glow on eyebrow · keeps the header clean and reads even on bloom */
 }
 .beat[data-side="ai"] .eyebrow {
-  color: color-mix(in oklab, var(--cool) 85%, white 10%);
-  text-shadow: 0 0 14px rgba(120, 180, 255, 0.35);
+  color: color-mix(in oklab, var(--cool) 88%, white 10%);
 }
 
 .beat .line {
@@ -511,6 +694,11 @@ html[data-highlight="both"]  .artificial-intel .intel-ring {
   letter-spacing: -0.005em;
   color: var(--ink);
   text-wrap: balance;
+  /* Film-trailer text legibility: a very soft dark halo.
+     Crisp on any backdrop, invisible on a plain dark screen. */
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.75),
+    0 6px 28px rgba(0, 0, 0, 0.55);
 }
 
 .beat .sub {
@@ -521,6 +709,7 @@ html[data-highlight="both"]  .artificial-intel .intel-ring {
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--ink-dim);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
 }
 
 .beat em {
@@ -533,7 +722,8 @@ html[data-highlight="both"]  .artificial-intel .intel-ring {
   background: linear-gradient(100deg, var(--warm-bright) 0%, var(--warm) 55%, #ff9a4d 100%);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 18px rgba(255, 180, 100, 0.45));
+  /* drop-shadow only activates during the climax em.earth reveal · kept off
+     on solo beats so the copy reads without a halo behind it. */
 }
 
 /* How · cool gradient */
@@ -541,7 +731,6 @@ html[data-highlight="both"]  .artificial-intel .intel-ring {
   background: linear-gradient(100deg, var(--cool-bright) 0%, var(--cool) 55%, #5a9fff 100%);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 18px rgba(120, 180, 255, 0.45));
 }
 
 /* Earth · fused, shimmering foil */
