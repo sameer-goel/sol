@@ -1,0 +1,44 @@
+[
+  {
+    "id": "sameer-goel",
+    "name": "Sameer Goel",
+    "role": "Human in the loop",
+    "kind": "human",
+    "keywords": ["philosophy", "shipping", "the questions"]
+  },
+  {
+    "id": "sameerai",
+    "name": "SameerAI",
+    "role": "Portfolio Curator",
+    "kind": "agent",
+    "keywords": ["narrative", "orchestration", "memory"]
+  },
+  {
+    "id": "design-agent",
+    "name": "Design Agent",
+    "role": "Visual Systems",
+    "kind": "agent",
+    "keywords": ["tiles", "glow", "rhythm"]
+  },
+  {
+    "id": "code-agent",
+    "name": "Code Agent",
+    "role": "Engineering",
+    "kind": "agent",
+    "keywords": ["ship", "refactor", "verify"]
+  },
+  {
+    "id": "research-agent",
+    "name": "Research Agent",
+    "role": "Inquiry",
+    "kind": "agent",
+    "keywords": ["questions", "mapping", "hypotheses"]
+  },
+  {
+    "id": "copy-agent",
+    "name": "Copy Agent",
+    "role": "Words & Tone",
+    "kind": "agent",
+    "keywords": ["rhythm", "emphasis", "economy"]
+  }
+]
