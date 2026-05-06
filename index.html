@@ -3,9 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Act I · Director's Cut — The Meaningful World</title>
+  <title>Sameer Goel · Solutions Portfolio</title>
 
-  <link rel="stylesheet" href="styles.css?build=v09-c">
+  <!-- Favicon · Duochrome Atom · matches the header logo -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="favicon.svg">
+
+  <link rel="stylesheet" href="styles.css?build=v10-c">
 
   <script type="importmap">
   {
@@ -265,11 +269,16 @@
   <!-- ─── macOS Tahoe header · self-guards until the login is dismissed.
        Kept out of the scroll experience so it doesn't compete with the
        narrative. Will fully activate in the "Team Behind" phase later. ─── -->
-  <script src="macOSTahoeHeader.js?v=20260506-1430"></script>
+  <script src="macOSTahoeHeader.js?build=v10-b"></script>
+
+  <!-- ─── macOS dock · HIDDEN for now (doesn't match current theme).
+       Re-enable by uncommenting the script tag below when we redesign
+       the dock to fit the rest of the UI language. ─── -->
+  <!-- <script src="dock.js?build=v10-a"></script> -->
 
   <!-- Earth engine (reused from the canonical tree) -->
   <script type="module" src="./earth-scene.js"></script>
-  <script src="director.js?build=v09-c"></script>
+  <script src="director.js?build=v10-c"></script>
 
 </body>
 </html>
