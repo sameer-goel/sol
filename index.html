@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Act I · Director's Cut — The Meaningful World</title>
+
+  <link rel="stylesheet" href="styles.css?v=20260506-1020">
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three":         "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body data-build="20260506-1020">
+
+  <!-- Build stamp so cache staleness is obvious at a glance -->
+  <div id="build-stamp" aria-hidden="true">director's cut · build 20260506-1020</div>
+
+  <!-- ========================================================
+       z=0 · Globe (masked by a scroll-driven porthole)
+       ======================================================== -->
+  <div id="scene-root"></div>
+
+  <!-- ========================================================
+       z=1 · Starfield + bloom effects
+       ======================================================== -->
+  <canvas id="stars-canvas" aria-hidden="true"></canvas>
+  <div id="bloom-layer" aria-hidden="true">
+    <div class="bloom warm"></div>
+    <div class="bloom cool"></div>
+    <div class="bloom fused"></div>
+  </div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <!-- Bluish atmosphere halo · grows as Earth arrives. Dark → azure gradient. -->
+  <div id="atmosphere" aria-hidden="true"></div>
+
+  <!-- ========================================================
+       z=2a · Split-screen stock footage. Dockable under the
+       menu beat. Left = crisis/war, right = people helping.
+       Drop any .mp4 at the data-src paths and they'll show.
+       ======================================================== -->
+  <div id="footage" aria-hidden="true">
+    <div class="footage-side footage-left">
+      <video class="footage-video" playsinline muted loop preload="metadata"
+             data-src="./assets/footage-war.mp4"></video>
+      <div class="footage-shade"></div>
+      <div class="footage-label">the world as it is</div>
+    </div>
+    <div class="footage-side footage-right">
+      <video class="footage-video" playsinline muted loop preload="metadata"
+             data-src="./assets/footage-help.mp4"></video>
+      <div class="footage-shade"></div>
+      <div class="footage-label">the world we build together</div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       z=2 · The two intelligences. Canvas-driven, scroll-timed.
+       ======================================================== -->
+  <div id="stage">
+
+    <!-- Inner intelligence · warm · "why" · grows dendritically -->
+    <div class="intel inner-intel">
+      <canvas class="intel-canvas" id="inner-canvas"></canvas>
+      <div class="intel-ring" aria-hidden="true"></div>
+    </div>
+
+    <!-- Artificial intelligence · cool · "how" · propagates layer-by-layer -->
+    <div class="intel artificial-intel">
+      <canvas class="intel-canvas" id="artificial-canvas"></canvas>
+      <div class="intel-ring" aria-hidden="true"></div>
+    </div>
+
+    <!-- Six solution petals — surface one at a time as Earth rotates.
+         Earth is the dial; one card floats above it. -->
+    <div class="petal" style="--accent: #ff6b4a;" data-label="Crisis Support">
+      <span>Crisis Support</span>
+    </div>
+    <div class="petal" style="--accent: #5ab8ff;" data-label="Mental Health">
+      <span>Mental Health</span>
+    </div>
+    <div class="petal" style="--accent: #b78bff;" data-label="Meaningful AI">
+      <span>Meaningful AI</span>
+    </div>
+    <div class="petal" style="--accent: #ffc54a;" data-label="Kids Education">
+      <span>Kids Education</span>
+    </div>
+    <div class="petal" style="--accent: #6bd6a0;" data-label="Self-help Tools">
+      <span>Self-help Tools</span>
+    </div>
+    <div class="petal" style="--accent: #4aa373;" data-label="Sustainability">
+      <span>Sustainability</span>
+    </div>
+
+  </div>
+
+  <!-- ========================================================
+       z=4 · Solutions dial. Appears once Earth has settled.
+       Earth itself is the knob — prev/next rotate the globe
+       and surface a new solution.
+       ======================================================== -->
+  <div id="solutions-selector" aria-hidden="true">
+    <button class="sel-arrow sel-prev" type="button" aria-label="Previous solution">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+        <path d="M10 2 L4 8 L10 14" stroke="currentColor" stroke-width="1.4"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="sel-dots" role="tablist" aria-label="Solutions"></div>
+    <button class="sel-arrow sel-next" type="button" aria-label="Next solution">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+        <path d="M6 2 L12 8 L6 14" stroke="currentColor" stroke-width="1.4"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="sel-hint" aria-hidden="true">
+      rotate earth ·
+      <kbd>←</kbd><kbd>→</kbd>
+      · or scroll
+    </div>
+  </div>
+
+  <!-- ========================================================
+       z=3 · Narration layer. Full-viewport editorial type.
+       One beat visible at a time. Climax beat is centered & large.
+       ======================================================== -->
+  <div id="narration" aria-live="polite">
+    <div class="beat" data-beat="0">
+      <div class="eyebrow">Act I</div>
+      <div class="line">Two intelligences, <em>one mission.</em></div>
+    </div>
+    <div class="beat" data-beat="1" data-side="inner">
+      <div class="eyebrow">Inner intelligence</div>
+      <div class="line">knows <em class="why">why.</em></div>
+      <div class="sub">Meaning · Feeling · Purpose</div>
+    </div>
+    <div class="beat" data-beat="2" data-side="ai">
+      <div class="eyebrow">Artificial intelligence</div>
+      <div class="line">knows <em class="how">how.</em></div>
+      <div class="sub">Tools · Systems · Application</div>
+    </div>
+    <div class="beat" data-beat="4" data-side="both">
+      <div class="line">When they meet&hellip;</div>
+    </div>
+    <div class="beat climax" data-beat="5">
+      <div class="line">a <em class="earth">meaningful world</em> emerges.</div>
+    </div>
+    <div class="beat" data-beat="6">
+      <div class="line">Our portfolio of <em>solutions.</em></div>
+      <div class="sub">Choose a cause · Earth is the dial</div>
+    </div>
+  </div>
+
+  <!-- Subtle scroll cue, bottom center. Fades after first scroll. -->
+  <div id="scroll-cue" aria-hidden="true">
+    <span>scroll</span>
+    <svg viewBox="0 0 12 16" width="12" height="16">
+      <path d="M6 1 V15 M1 10 L6 15 L11 10" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <!-- Spacer — 600vh so we get room for all 7 beats to breathe -->
+  <div id="scroll-spacer" aria-hidden="true"></div>
+
+  <!-- Earth engine (reused from the canonical tree) -->
+  <script type="module" src="./earth-scene.js"></script>
+  <script src="director.js?v=20260506-1020"></script>
+
+</body>
+</html>
