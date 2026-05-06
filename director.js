@@ -13,7 +13,7 @@
  * complaint.
  */
 
-console.info('[act1 director] earth.v0.8');
+console.info('[act1 director] earth.v0.9');
 
 // ─── Pill bar visibility ──────────────────────────────────────────────
 // The pill bar is revealed once the user has actually reached the menu
@@ -583,8 +583,10 @@ const ArtificialNet = (() => {
 // ─── Narration timeline ───────────────────────────────────────────────────
 
 const NARRATION_BEATS = [
-  // beat 0 · Act I · Two intelligences, one mission.
-  { start: 0.00, peakIn: 0.03, peakOut: 0.10, end: 0.13, side: null    },
+  // beat 0 · HERO · Two Intelligence for One Mission.
+  // Held longer (0 → 0.15) so it lands as a proper title card, then
+  // slides up as the user continues scrolling into beat 1.
+  { start: 0.00, peakIn: 0.02, peakOut: 0.12, end: 0.15, side: null    },
   // beat 1 · Inner intelligence knows why. — inner grows
   { start: 0.12, peakIn: 0.17, peakOut: 0.26, end: 0.30, side: 'inner' },
   // beat 2 · Artificial intelligence knows how. — AI propagates
@@ -629,7 +631,8 @@ function driveNarration(t) {
 
     // Beats that want to sit vertically centered (full translate(-50%,-50%))
     // versus those that sit at the narration top (only translateX(-50%)).
-    const isCentered = el.classList.contains('climax')
+    const isCentered = el.classList.contains('hero')
+                    || el.classList.contains('climax')
                     || el.classList.contains('welcome');
 
     if (op < 0.01) {
@@ -1182,76 +1185,54 @@ window.Letterbox = Letterbox;
 
 
 // ─── Finale CTA · end-of-scroll state ─────────────────────────────────
-// Appears once the scroll crosses CTA_START (≈0.97). Three buttons:
-//   · cta-email   → Drop Sameer a message (mailto, Base64-protected)
-//   · cta-team    → Meet the team behind (opens team modal · Phase D)
-//   · cta-replay  → Replay the experience (via window.sgReplay)
+// Appears once the scroll crosses CTA_START (≈0.97).
+//   · cta-email       → Plain <a href="mailto:..."> link (works across browsers)
+//   · cta-email-copy  → Click to copy the email to clipboard (visible sub-text)
+//   · cta-team        → Meet the team behind (opens team modal)
+//   · cta-replay      → Replay the experience (via window.sgReplay)
 //
-// Email protection approach:
-//   The address never exists as plaintext in the DOM, JSON, or any
-//   global variable. It lives in TWO base64 strings split at the '@'
-//   boundary, concatenated+decoded only inside the click handler.
-//   After the mailto fires, the decoded string goes out of scope.
-//   Not bulletproof against a determined headless scraper that would
-//   simulate the click, but breaks all regex-level and casual scrapers.
+// Email visibility: the address is intentionally visible as sub-text so
+// users without a configured mail client can still copy it. This is a
+// deliberate UX tradeoff over the earlier Base64-protected version.
 
 const Finale = (() => {
-  const el       = document.getElementById('finale-cta');
-  const emailBtn = document.getElementById('cta-email');
-  const teamBtn  = document.getElementById('cta-team');
-  const replayBtn= document.getElementById('cta-replay');
+  const el        = document.getElementById('finale-cta');
+  const copyBtn   = document.getElementById('cta-email-copy');
+  const teamBtn   = document.getElementById('cta-team');
+  const replayBtn = document.getElementById('cta-replay');
   if (!el) return { update: () => {} };
 
-  // sameer.goel@outlook.com — split at the '@' so regex over the JS
-  // source cannot reconstruct it without executing the decode step.
-  const E_LOCAL  = 'c2FtZWVyLmdvZWw=';     // → "sameer.goel"
-  const E_DOMAIN = 'b3V0bG9vay5jb20=';     // → "outlook.com"
-
-  function buildMailtoUrl() {
-    // Decode only at click time, locally scoped. Do NOT assign to window
-    // or keep a module-level reference to the decoded string.
-    const local  = atob(E_LOCAL);
-    const domain = atob(E_DOMAIN);
-    const addr   = local + '@' + domain;
-    const subject = encodeURIComponent('Opportunity');
-    const body    = encodeURIComponent(
-      "Hi Sameer,\n\n" +
-      "I came across your Immersive Solutions Portfolio and wanted to reach out.\n\n"
-    );
-    return 'mailto:' + addr + '?subject=' + subject + '&body=' + body;
-  }
-
-  if (emailBtn) {
-    emailBtn.addEventListener('click', () => {
-      // Invoke the mail handler without navigating the portfolio tab.
-      // Assigning to window.location triggers Chrome's "state for
-      // intermediate websites may be deleted" warning because the tab
-      // is treated as a navigation target even though the OS mail
-      // client grabs the mailto URL. An anchor click with no target
-      // lets the browser hand off to the mail handler cleanly.
-      const a = document.createElement('a');
-      a.href = buildMailtoUrl();
-      a.rel = 'noopener';
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      // Clean up immediately so the anchor isn't left in the DOM.
-      setTimeout(() => a.remove(), 0);
+  // Copy-to-clipboard handler · gives the subtext button dual purpose.
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      const email = copyBtn.dataset.email || copyBtn.textContent.trim();
+      try {
+        await navigator.clipboard.writeText(email);
+        copyBtn.classList.add('is-copied');
+        setTimeout(() => copyBtn.classList.remove('is-copied'), 1800);
+      } catch (_) {
+        // Clipboard API unavailable · fall back to select-and-copy via
+        // temporary textarea. Rare case on very old browsers.
+        const ta = document.createElement('textarea');
+        ta.value = email;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch {}
+        ta.remove();
+        copyBtn.classList.add('is-copied');
+        setTimeout(() => copyBtn.classList.remove('is-copied'), 1800);
+      }
     });
   }
 
   if (teamBtn) {
     teamBtn.addEventListener('click', () => {
-      // Phase D will wire this to the team modal. For now, fire a custom
-      // event so Phase D's code can listen without edits here.
       window.dispatchEvent(new CustomEvent('sg:team-open'));
     });
   }
 
   if (replayBtn) {
     replayBtn.addEventListener('click', () => {
-      // Keep the name; clear only the intro-done flag so the lock
-      // screen shows again and replays the whole journey.
       if (typeof window.sgReplay === 'function') {
         window.sgReplay();
       } else {
@@ -1349,6 +1330,166 @@ const TeamModal = (() => {
 })();
 
 window.TeamModal = TeamModal;
+
+
+// ─── Autoplay · hands-free scroll through the whole journey ──────────
+// Users can click the "Autoplay" button in the scroll-cue to sit back
+// and watch. We scroll the window at a calm pace (roughly 60 seconds
+// from top to bottom), pausing naturally at key narrative beats so the
+// user has time to read. Any manual scroll, wheel, or touch cancels.
+
+const Autoplay = (() => {
+  const btn     = document.getElementById('hero-autoplay');
+  const iconPlay  = btn?.querySelector('.icon-play');
+  const iconPause = btn?.querySelector('.icon-pause');
+  const label   = btn?.querySelector('.hero-btn-label');
+  if (!btn) return { toggle: () => {}, stop: () => {} };
+
+  let playing = false;
+  let rafId = null;
+  let lastTs = 0;
+
+  // Total playback time from 0% to 100% at natural reading pace.
+  // 60 seconds feels like a slow, considered read; 45 feels brisk.
+  const TOTAL_MS = 60000;
+
+  // "Breath pauses" at key beats so the copy has time to land. Each
+  // entry is [t, extraMsToDwell]. Pauses are additive, not absolute.
+  const BREATH_AT = [
+    [0.08, 1600],   // hero title
+    [0.30, 1200],   // WHY landing
+    [0.46, 1200],   // HOW landing
+    [0.58, 1800],   // CLIMAX — longest pause
+    [0.66, 1400],   // welcome
+    [0.75, 1000],   // first category
+    [0.98, 2000],   // CTA appears — let the user see it
+  ];
+
+  function setIcon(isPlaying) {
+    if (!iconPlay || !iconPause) return;
+    iconPlay.style.display  = isPlaying ? 'none' : '';
+    iconPause.style.display = isPlaying ? '' : 'none';
+    if (label) label.textContent = isPlaying ? 'Pause the story' : 'Autoplay the story';
+    btn.classList.toggle('is-playing', isPlaying);
+    btn.setAttribute('aria-label',
+      isPlaying ? 'Pause the autoplay' : 'Autoplay the experience');
+  }
+
+  function stop() {
+    playing = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+    setIcon(false);
+  }
+
+  function start() {
+    if (playing) return;
+    playing = true;
+    setIcon(true);
+    lastTs = 0;
+
+    const maxScroll = () => document.body.scrollHeight - window.innerHeight;
+
+    function tick(ts) {
+      if (!playing) return;
+      if (!lastTs) lastTs = ts;
+      const dt = ts - lastTs;
+      lastTs = ts;
+
+      const max = maxScroll();
+      const curY = window.scrollY;
+      const curT = max > 0 ? curY / max : 0;
+
+      // Check for a breath pause · if we're within a small window of
+      // a breath point, slow to a near-stop for the dwell duration.
+      let dwellFactor = 1;
+      for (const [bt, bMs] of BREATH_AT) {
+        const dist = Math.abs(curT - bt);
+        if (dist < 0.012) {
+          // Near the breath point · slow down proportional to closeness
+          const closeness = 1 - (dist / 0.012);
+          dwellFactor = 1 - closeness * 0.85;  // 1.0 at edges, 0.15 at center
+          break;
+        }
+      }
+
+      // Scroll rate · pixels per second to cover full height in TOTAL_MS
+      const baseRate = max / (TOTAL_MS / 1000);
+      const delta = baseRate * (dt / 1000) * dwellFactor;
+      const nextY = Math.min(max, curY + delta);
+
+      window.scrollTo(0, nextY);
+
+      if (nextY >= max - 1) {
+        // Reached the end. Stop cleanly.
+        stop();
+        return;
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function toggle() {
+    if (playing) stop(); else start();
+  }
+
+  btn.addEventListener('click', toggle);
+
+  // User interaction cancels autoplay. We listen for scroll events
+  // that aren't driven by our own scrollTo. Simple heuristic: if the
+  // user touches wheel / keys / touchmove while playing, stop.
+  ['wheel', 'touchmove', 'keydown'].forEach((evt) => {
+    window.addEventListener(evt, (ev) => {
+      if (!playing) return;
+      // Ignore the arrow keys if the user explicitly wants to step
+      if (evt === 'keydown' &&
+          !['ArrowDown','ArrowUp','PageDown','PageUp','Space',' '].includes(ev.key)) {
+        return;
+      }
+      stop();
+    }, { passive: true });
+  });
+
+  return { start, stop, toggle };
+})();
+
+window.Autoplay = Autoplay;
+
+
+// ─── Hero navigation · Scroll-to-begin + Jump-to-solutions ───────────
+// Paired with the Autoplay button above, the hero offers three clear
+// paths so the user is never stuck on "what do I do?" on first load.
+//
+//   · Scroll to begin     → scrolls down one viewport (enters the story)
+//   · Jump to solutions   → smooth-scrolls straight to MENU_FULL (t≈0.72),
+//                           skipping the narrative prologue for users
+//                           who just want to see the portfolio.
+(() => {
+  const scrollBtn = document.getElementById('hero-scroll');
+  const jumpBtn   = document.getElementById('hero-jump');
+
+  if (scrollBtn) {
+    scrollBtn.addEventListener('click', () => {
+      window.scrollTo({
+        top: window.scrollY + window.innerHeight,
+        behavior: 'smooth',
+      });
+    });
+  }
+
+  if (jumpBtn) {
+    jumpBtn.addEventListener('click', () => {
+      // Menu enters at MENU_FULL (0.72). Target the midpoint of the
+      // first category band so the user lands with Category 01 already
+      // active and revealed.
+      const max = document.body.scrollHeight - window.innerHeight;
+      // MENU_FULL is declared at file top; referenced directly here.
+      const targetT = 0.73;  // slightly past MENU_FULL so first pane is visible
+      window.scrollTo({ top: targetT * max, behavior: 'smooth' });
+    });
+  }
+})();
 
 
 // ─── Scroll → smoothed progress ────────────────────────────────────────
