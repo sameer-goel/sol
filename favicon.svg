@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-60 -60 120 120">
+  <!--
+    Favicon · Duochrome Atom (static version of v2-03 from ai-atom-v2.html)
+    Animations stripped for reliability across browser tab rendering;
+    icon reads as a logo at 16/32/64/180 px without motion.
+  -->
+  <defs>
+    <linearGradient id="fv-cyan" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#00d2ff"/>
+      <stop offset="1" stop-color="#3a7bd5"/>
+    </linearGradient>
+    <linearGradient id="fv-pink" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff6b9d"/>
+      <stop offset="1" stop-color="#c4a0ff"/>
+    </linearGradient>
+    <linearGradient id="fv-white" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#a8d4ff"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+    <radialGradient id="fv-proton" cx="0.3" cy="0.3">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.3" stop-color="#c4a0ff"/>
+      <stop offset="0.7" stop-color="#3a7bd5"/>
+      <stop offset="1" stop-color="#1a0a3e"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Subtle background circle so the icon reads well on both light
+       and dark tab bars. Radius just fits the orbits. -->
+  <circle r="58" fill="#0a0f1e"/>
+
+  <!-- Orbit 1 · cyan, horizontal -->
+  <g>
+    <ellipse rx="48" ry="18" fill="none" stroke="url(#fv-cyan)" stroke-width="3.2"/>
+    <!-- Frozen electron position on the cyan orbit -->
+    <circle cx="48" cy="0" r="5.5" fill="#00d2ff"/>
+  </g>
+
+  <!-- Orbit 2 · pink, rotated 60° -->
+  <g transform="rotate(60)">
+    <ellipse rx="48" ry="18" fill="none" stroke="url(#fv-pink)" stroke-width="3.2"/>
+    <circle cx="-24" cy="-15.6" r="5.5" fill="#ff6b9d"/>
+  </g>
+
+  <!-- Orbit 3 · white, rotated -60° -->
+  <g transform="rotate(-60)">
+    <ellipse rx="48" ry="18" fill="none" stroke="url(#fv-white)" stroke-width="3.2"/>
+    <circle cx="-24" cy="15.6" r="5.5" fill="#ffffff"/>
+  </g>
+
+  <!-- Proton · no pulse in favicon -->
+  <circle r="15" fill="url(#fv-proton)"/>
+</svg>
