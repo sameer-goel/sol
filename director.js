@@ -480,17 +480,15 @@ const ArtificialNet = (() => {
 
 const NARRATION_BEATS = [
   // beat 0 · Act I · Two intelligences, one mission.
-  { start: 0.00, peakIn: 0.04, peakOut: 0.14, end: 0.18, side: null    },
+  { start: 0.00, peakIn: 0.03, peakOut: 0.10, end: 0.13, side: null    },
   // beat 1 · Inner intelligence knows why. — inner grows
-  { start: 0.16, peakIn: 0.22, peakOut: 0.36, end: 0.40, side: 'inner' },
+  { start: 0.12, peakIn: 0.17, peakOut: 0.26, end: 0.30, side: 'inner' },
   // beat 2 · Artificial intelligence knows how. — AI propagates
-  { start: 0.38, peakIn: 0.44, peakOut: 0.58, end: 0.62, side: 'ai'    },
+  { start: 0.28, peakIn: 0.33, peakOut: 0.42, end: 0.46, side: 'ai'    },
   // beat 4 · When they meet…    (beat 3 "half a story" removed)
-  { start: 0.62, peakIn: 0.68, peakOut: 0.74, end: 0.77, side: 'both'  },
-  // beat 5 · CLIMAX · a meaningful world emerges.
-  { start: 0.74, peakIn: 0.80, peakOut: 0.88, end: 0.92, side: null    },
-  // beat 6 · Our portfolio of solutions.
-  { start: 0.90, peakIn: 0.94, peakOut: 1.00, end: 1.00, side: null    },
+  { start: 0.46, peakIn: 0.49, peakOut: 0.52, end: 0.55, side: 'both'  },
+  // beat 5 · CLIMAX · a meaningful world of tomorrow.
+  { start: 0.54, peakIn: 0.56, peakOut: 0.58, end: 0.61, side: null    },
 ];
 
 const beatEls = Array.from(document.querySelectorAll('#narration .beat'));
@@ -543,10 +541,10 @@ function driveNarration(t) {
 const GLOBE_KEYS = [
   // [t, lon, lat, zoom, lookOffset]
   [0.00,  -90,   18,   0.35,  0.30],
-  [0.60,  -40,   10,   0.55,  0.12],
-  [0.78,    0,    0,   0.70,  0.00],
-  [0.90,    0,    0,   0.60,  0.00],
-  [1.00,    0,    0,   0.55,  0.00],
+  [0.44,  -40,   10,   0.55,  0.12],
+  [0.56,    0,    0,   0.70,  0.00],
+  [0.62,    0,    0,   0.60,  0.00],
+  [1.00,    0,    0,   0.58,  0.00],
 ];
 
 function sampleKeys(keys, t) {
@@ -566,21 +564,35 @@ function sampleKeys(keys, t) {
   return { lon: last[1], lat: last[2], zoom: last[3], lookOffset: last[4] };
 }
 
+// ─── Menu phase · letterbox timing ────────────────────────────────────
+// The spacer is 1300vh. Narrative takes t ∈ [0, 0.46], climax rides up to
+// 0.58, menu enters at 0.58, fully engaged by 0.62. From 0.62 → 1.00 the
+// 7 categories are mapped linearly to scroll — one category per 0.0543
+// of normalized progress (≈ 5.4% of total page scroll each).
+const MENU_ENTER = 0.58;   // letterbox starts to fade in
+const MENU_FULL  = 0.62;   // fully engaged, scroll now cycles categories
+const MENU_END   = 1.00;
+
 function driveEarth(t) {
   const E = window.EarthScene;
   if (!E) return;
   const k = sampleKeys(GLOBE_KEYS, t);
 
-  // Once the dial is alive, the selected solution drives extra longitude.
-  // Each step rotates Earth 60°, tweened by the dial's smoothed index.
-  const dialActive = range(t, 0.90, 1.00);
-  const extraLon = (window.SolutionsDial?.smoothIndex ?? 0) * -60 * dialActive;
+  // Once the letterbox is alive, the selected category drives extra
+  // longitude. We use a 7-step wheel of 360° — each category ≈ 51.4°.
+  const menuActive = range(t, MENU_ENTER, MENU_FULL);
+  const stepDeg = 360 / Math.max(1, (window.Letterbox?.count || 7));
+  const extraLon = (window.Letterbox?.smoothIndex ?? 0) * -stepDeg * menuActive;
+
+  // Earth shifts left ~14% of the viewport during the menu so the
+  // roster + right stack have breathing room. Purely camera pan.
+  const lookOffsetMenu = lerp(k.lookOffset, -0.28, menuActive);
 
   E.setCamera({
     lon:        k.lon + extraLon,
     lat:        k.lat,
     zoom:       k.zoom,
-    lookOffset: k.lookOffset,
+    lookOffset: lookOffsetMenu,
   });
   // Bright, hopeful tone once Earth is visible.
   E.setDayNight(lerp(0.9, 1.0, easeInOutCubic(range(t, 0.70, 0.90))));
@@ -591,27 +603,24 @@ function driveEarth(t) {
 
 const innerEl = document.querySelector('.inner-intel');
 const aiEl    = document.querySelector('.artificial-intel');
-const petals  = Array.from(document.querySelectorAll('.petal'));
 
 function driveStage(t, time) {
   const idleY = Math.sin(time * 0.0008) * 6;
 
   // ─── Intelligences · positioning ───
-  // Apart during the first two beats, drifting toward center through "meet",
-  // then fading out as Earth takes over.
-  // We place them side-by-side at rest, ±28vw from center, and collapse to 0
-  // between t ∈ [0.64, 0.78].
+  // Narrative beats now end by t≈0.56 (the climax). Converge window and
+  // fade-out shifted earlier to match.
   const restingX = window.innerWidth * 0.22;
-  const converge = easeInOutCubic(range(t, 0.64, 0.78));
+  const converge = easeInOutCubic(range(t, 0.46, 0.56));
   const xNow = lerp(restingX, 0, converge);
 
-  // Opacity: appear from t=0.06, hold, fade from t=0.76 → 0.84
-  const fadeIn  = easeInOutCubic(range(t, 0.06, 0.18));
-  const fadeOut = easeInOutCubic(range(t, 0.76, 0.84));
+  // Opacity: appear from t=0.04, hold, fade from t=0.54 → 0.60
+  const fadeIn  = easeInOutCubic(range(t, 0.04, 0.14));
+  const fadeOut = easeInOutCubic(range(t, 0.54, 0.60));
   const op = clamp(fadeIn - fadeOut, 0, 1);
 
-  // Subtle scale kiss at convergence — the moment of meeting
-  const meetingPulse = Math.sin(range(t, 0.66, 0.76) * Math.PI);
+  // Subtle scale kiss at convergence
+  const meetingPulse = Math.sin(range(t, 0.48, 0.56) * Math.PI);
   const meetScale = 1 + 0.05 * meetingPulse;
 
   innerEl.style.transform =
@@ -623,218 +632,306 @@ function driveStage(t, time) {
   aiEl.style.opacity = op;
 
   // ─── Inner and Artificial · progressive reveals ───
-  // Inner grows dendritically during the "why" beat. AI propagates during
-  // "how". They both fully complete by the time "meet" starts, so when
-  // they converge both networks are alive side-by-side.
-  const innerT = range(t, 0.12, 0.50);
-  const aiT    = range(t, 0.32, 0.58);
+  const innerT = range(t, 0.08, 0.36);
+  const aiT    = range(t, 0.22, 0.44);
   InnerBrain.render(performance.now(), innerT);
   ArtificialNet.render(performance.now(), aiT);
 
-  // ─── Blooms ───
-  // Warm bloom grows with inner reveal, cool bloom with artificial.
-  // Fused bloom peaks at the moment of the climax (t ~ 0.78) and fades
-  // as petals arrive.
-  const warmBloom = innerT * (1 - fadeOut);
-  const coolBloom = aiT    * (1 - fadeOut);
+  // ─── Blooms — reserved for the convergence/climax moment only ───
+  // Wake for meet, peak at climax, fully gone before menu takes over.
+  const mergeT = smoothstep(range(t, 0.42, 0.52));
+  const decay  = 1 - easeInOutCubic(range(t, 0.56, 0.60));
+  const warmBloom = mergeT * decay;
+  const coolBloom = mergeT * decay;
   const fusedBloom = Math.max(0,
-    smoothstep(range(t, 0.68, 0.82)) * (1 - range(t, 0.88, 0.96))
+    smoothstep(range(t, 0.48, 0.56)) * (1 - range(t, 0.56, 0.60))
   );
   const root = document.documentElement.style;
   root.setProperty('--warm-bloom',  warmBloom.toFixed(3));
   root.setProperty('--cool-bloom',  coolBloom.toFixed(3));
   root.setProperty('--fused-bloom', fusedBloom.toFixed(3));
 
-  // ─── Atmosphere · dark → bluish as Earth arrives ───
-  // Starts climbing with the climax, holds once we're in the menu.
+  // ─── Atmosphere · tight rim halo only, no ambient wash ───
   const atmosphere = clamp(
-    smoothstep(range(t, 0.68, 0.88)) * (0.85 + 0.15 * range(t, 0.88, 1.00)),
+    smoothstep(range(t, 0.48, 0.60)) * 0.9,
     0, 1
   );
   root.setProperty('--atmosphere', atmosphere.toFixed(3));
 
-  // ─── Stock footage · split screen · only during the menu beat ───
-  // Fades in as the portfolio appears, out if the user scrolls back.
-  const footageOp = easeInOutCubic(range(t, 0.92, 1.00)) * 0.75;
-  root.setProperty('--footage-op', footageOp.toFixed(3));
-  Footage.setActive(footageOp > 0.05);
+  // ─── Vignette · fade it out in the menu beat so Earth can breathe ───
+  const menuT = easeInOutCubic(range(t, MENU_ENTER, MENU_FULL));
+  root.setProperty('--vignette-op', lerp(1.0, 0.25, menuT).toFixed(3));
+
+  // ─── Narration scrim · fades out as the letterbox takes the stage ───
+  const scrim = 1 - easeInOutCubic(range(t, 0.50, 0.62));
+  root.setProperty('--narration-scrim', scrim.toFixed(3));
 
   // ─── Porthole (Earth reveal mask) ───
-  // Starts opening during "meet" (t=0.70), full viewport by t=0.86.
   const viewportMax = Math.hypot(window.innerWidth, window.innerHeight) * 0.6;
-  const revealT = easeInOutCubic(range(t, 0.70, 0.86));
+  const revealT = easeInOutCubic(range(t, 0.46, 0.58));
   root.setProperty('--reveal-radius', `${revealT * viewportMax}px`);
 
-  // ─── Petals · one-at-a-time dial around Earth ───
-  // The earth itself is the rotating knob. SolutionsDial tracks which
-  // petal is active and animates a single card into view above Earth.
-  // Overlapping ring of six is gone — one solution at a time, rotate to change.
-  const dialT = easeOutQuint(range(t, 0.90, 1.00));
-  SolutionsDial.render(time, dialT);
+  // ─── Letterbox · drives itself off scroll t ───
+  Letterbox.render(t);
 }
 
 
-// ─── Stock footage · split-screen helper ────────────────────────────────
-// Lazy: probes each data-src with HEAD, assigns src only if the file exists.
-// This way the page works whether or not you've dropped .mp4 files into
-// ./assets/. If missing, the tonal fallback (red wash left, teal wash right)
-// from styles.css takes over.
+// ─── Letterbox · split-letter menu, scroll-driven ────────────────────
+// Renders the 7-category roster on the left and a glass stack on the
+// right with glyph + tagline + project links. Scroll maps directly to
+// the active index. On each rotation "lock-on" we fire a short .lb-pulse
+// class (~1.2s) that glows the active item. No buttons, no keys — scroll
+// is the only navigation. Hover glows links. Those are the only two
+// moments where accent color lights up.
 
-const Footage = (() => {
-  const videos = Array.from(document.querySelectorAll('.footage-video'));
-  let ready = false;
+const Letterbox = (() => {
+  const root      = document.getElementById('letterbox');
+  const rosterEl  = document.getElementById('lb-roster');
+  const stackEl   = document.getElementById('lb-stack');
 
-  async function probe() {
-    await Promise.all(videos.map(async (v) => {
-      const src = v.dataset.src;
-      if (!src) return;
-      try {
-        const res = await fetch(src, { method: 'HEAD' });
-        if (res.ok) {
-          v.src = src;
-          v.load();
-        }
-      } catch (_) { /* file isn't there — fallback wash shows through */ }
-    }));
-    ready = true;
+  // All seven glyph SVGs · authored at 64×64 viewBox, inherit currentColor.
+  const GLYPHS = {
+    'crisis-support': `
+      <svg viewBox="0 0 64 64" class="glyph-sos">
+        <g class="ring">
+          <circle cx="32" cy="32" r="22"/>
+          <circle cx="32" cy="32" r="12" opacity="0.45"/>
+        </g>
+        <line x1="32" y1="8"  x2="32" y2="12" opacity="0.4"/>
+        <line x1="32" y1="52" x2="32" y2="56" opacity="0.4"/>
+        <line x1="8"  y1="32" x2="12" y2="32" opacity="0.4"/>
+        <line x1="52" y1="32" x2="56" y2="32" opacity="0.4"/>
+        <text class="text" x="32" y="36" text-anchor="middle" font-size="11">SOS</text>
+        <circle class="mark fill" cx="32" cy="15" r="1.3"/>
+        <circle class="mark fill" cx="38" cy="15.6" r="1.3"/>
+        <circle class="mark fill" cx="44" cy="17.2" r="1.3"/>
+        <line class="mark" x1="48.3" y1="21.5" x2="50.2" y2="25.5"/>
+        <line class="mark" x1="50"   y1="29"   x2="50"   y2="33"/>
+        <line class="mark" x1="50.2" y1="36.5" x2="48.3" y2="40.5"/>
+        <circle class="mark fill" cx="44" cy="44.8" r="1.3"/>
+        <circle class="mark fill" cx="38" cy="46.4" r="1.3"/>
+        <circle class="mark fill" cx="32" cy="47" r="1.3"/>
+      </svg>`,
+    'mental-health': `
+      <svg viewBox="0 0 64 64" class="glyph-mind">
+        <g class="ring-outer"><circle cx="32" cy="32" r="24" stroke-dasharray="46 14"/></g>
+        <g class="ring-inner"><circle cx="32" cy="32" r="14" stroke-dasharray="28 10"/></g>
+        <circle cx="32" cy="32" r="1.8" class="fill"/>
+      </svg>`,
+    'special-sounds': `
+      <svg viewBox="0 0 64 64" class="glyph-binaural">
+        <ellipse cx="32" cy="34" rx="12" ry="14"/>
+        <path d="M 26 48 L 26 52 Q 22 54 20 58" opacity="0.45"/>
+        <path d="M 38 48 L 38 52 Q 42 54 44 58" opacity="0.45"/>
+        <path d="M 14 28 Q 32 10 50 28"/>
+        <g class="pulse-l"><rect x="10" y="24" width="8" height="10" rx="3"/></g>
+        <g class="pulse-r"><rect x="46" y="24" width="8" height="10" rx="3"/></g>
+        <text class="label" x="14" y="44" text-anchor="middle" font-size="5">L</text>
+        <text class="label" x="50" y="44" text-anchor="middle" font-size="5">R</text>
+      </svg>`,
+    'autonomous-ai': `
+      <svg viewBox="0 0 64 64" class="glyph-agent">
+        <circle cx="32" cy="32" r="20" stroke-dasharray="2 5" opacity="0.45"/>
+        <circle cx="52" cy="32" r="1.6" class="fill"/>
+        <circle cx="22" cy="13" r="1.6" class="fill"/>
+        <circle cx="22" cy="51" r="1.6" class="fill"/>
+        <path class="agent fill" d="M 0 -4 L 4 4 L -4 4 Z" transform="translate(0,0)"/>
+        <text class="text" x="32" y="36" text-anchor="middle" font-size="14">AI</text>
+      </svg>`,
+    'sovereign-ai': `
+      <svg viewBox="0 0 64 64" class="glyph-shield">
+        <path d="M 32 6 L 54 17 L 54 36 Q 54 48 32 58 Q 10 48 10 36 L 10 17 Z"/>
+        <line class="spoke" x1="32" y1="14" x2="32" y2="20"/>
+        <line class="spoke" x1="46" y1="44" x2="40" y2="40"/>
+        <line class="spoke" x1="18" y1="44" x2="24" y2="40"/>
+        <text class="text" x="32" y="38" text-anchor="middle" font-size="15">AI</text>
+      </svg>`,
+    'cultivate-inner-intelligence': `
+      <svg viewBox="0 0 64 64" class="glyph-book">
+        <line x1="32" y1="14" x2="32" y2="50" opacity="0.55"/>
+        <path d="M 32 16 Q 22 13 12 18 L 12 46 Q 22 43 32 46 Z"/>
+        <path d="M 32 16 Q 42 13 52 18 L 52 46 Q 42 43 32 46 Z"/>
+        <g class="spiral" opacity="0.5">
+          <line x1="17" y1="26" x2="28" y2="24"/>
+          <line x1="17" y1="32" x2="28" y2="30"/>
+          <line x1="17" y1="38" x2="28" y2="36"/>
+          <line x1="36" y1="24" x2="47" y2="26"/>
+          <line x1="36" y1="30" x2="47" y2="32"/>
+          <line x1="36" y1="36" x2="47" y2="38"/>
+        </g>
+        <text class="label" x="32" y="60" text-anchor="middle" font-size="7">BOOK</text>
+      </svg>`,
+    'self-help': `
+      <svg viewBox="0 0 64 64" class="glyph-flower">
+        <path d="M 32 56 Q 32 44 32 30"/>
+        <path d="M 32 46 Q 24 44 22 48 Q 28 50 32 48" opacity="0.7"/>
+        <g>
+          <path class="petal" style="--a:   0deg" d="M 32 26 Q 30 12 32 10 Q 34 12 32 26 Z"/>
+          <path class="petal" style="--a:  72deg" d="M 32 26 Q 30 12 32 10 Q 34 12 32 26 Z"/>
+          <path class="petal" style="--a: 144deg" d="M 32 26 Q 30 12 32 10 Q 34 12 32 26 Z"/>
+          <path class="petal" style="--a: 216deg" d="M 32 26 Q 30 12 32 10 Q 34 12 32 26 Z"/>
+          <path class="petal" style="--a: 288deg" d="M 32 26 Q 30 12 32 10 Q 34 12 32 26 Z"/>
+        </g>
+        <circle cx="32" cy="26" r="2.4" class="fill"/>
+      </svg>`,
+  };
+
+  // Placeholder data · replaced by fetched solutions.json if available
+  const FALLBACK = [
+    { id:'crisis-support', name:'Crisis Support', accent:'#ff6b4a', tagline:'When every minute matters.', projects:[] },
+    { id:'mental-health',  name:'Mental Health',  accent:'#5ab8ff', tagline:'Train the mind you already have.', projects:[] },
+    { id:'special-sounds', name:'Special Sounds', accent:'#b78bff', tagline:'Frequencies that re-tune you.', projects:[] },
+    { id:'autonomous-ai',  name:'Autonomous AI',  accent:'#5ae0d0', tagline:'Agents that do, not just answer.', projects:[] },
+    { id:'sovereign-ai',   name:'Sovereign AI',   accent:'#ffc54a', tagline:'Own your intelligence stack.',   projects:[] },
+    { id:'cultivate-inner-intelligence', name:'Cultivate Inner Intelligence', accent:'#ff9b7a', tagline:'A book. A mirror.', projects:[] },
+    { id:'self-help',      name:'Self Help',      accent:'#6bd6a0', tagline:'Small tools, daily wins.', projects:[] },
+  ];
+
+  let data = FALLBACK;
+
+  // Smoothed active index so Earth rotation + roster-size animation tween
+  let targetIdx  = 0;
+  let currentIdx = 0;
+  const idxVel = { v: 0 };
+  let lastLockedIdx = -1;
+
+  // Italicize the last word of the active category name (cinematic touch)
+  function italicizeActive(name) {
+    const words = name.split(' ');
+    return words.length > 1
+      ? `${words.slice(0, -1).join(' ')} <em>${words.slice(-1)}</em>`
+      : `<em>${name}</em>`;
   }
-  probe();
 
-  function setActive(isActive) {
-    if (!ready) return;
-    for (const v of videos) {
-      if (!v.src) continue;
-      if (isActive && v.paused) {
-        const p = v.play();
-        if (p && p.catch) p.catch(() => { /* autoplay blocked until interaction */ });
-      } else if (!isActive && !v.paused) {
-        v.pause();
+  function buildRoster() {
+    rosterEl.innerHTML = '';
+    data.forEach((cat, i) => {
+      const li = document.createElement('li');
+      li.className = 'lb-item';
+      li.dataset.idx = i;
+      li.style.setProperty('--item-accent', cat.accent);
+      li.innerHTML = `
+        <span class="lb-num">${String(i + 1).padStart(2, '0')}</span>
+        <span class="lb-dot" aria-hidden="true"></span>
+        <span class="lb-label">${cat.name}</span>
+      `;
+      rosterEl.appendChild(li);
+    });
+  }
+
+  function buildStack() {
+    const cat = data[targetIdx];
+    if (!cat) return;
+    document.documentElement.style.setProperty('--accent', cat.accent);
+    stackEl.style.setProperty('--accent', cat.accent);
+    stackEl.innerHTML = `
+      <header>
+        <div class="lb-glass"><div class="lb-glyph">${GLYPHS[cat.id] || ''}</div></div>
+        <div>
+          <div class="lb-name">${cat.name}</div>
+          <div class="lb-tag">${cat.tagline || ''}</div>
+        </div>
+      </header>
+      <ul class="lb-projects">
+        ${cat.projects.map(p =>
+          `<li><a href="${p.url}" target="_blank" rel="noopener">${p.label}</a></li>`
+        ).join('')}
+      </ul>
+    `;
+  }
+
+  function applyActive() {
+    // Update roster DOM: active item gets italicized label + .is-active
+    const items = rosterEl.querySelectorAll('.lb-item');
+    items.forEach((li, i) => {
+      const cat = data[i];
+      const label = li.querySelector('.lb-label');
+      const isActive = i === targetIdx;
+      li.classList.toggle('is-active', isActive);
+      label.innerHTML = isActive ? italicizeActive(cat.name) : cat.name;
+    });
+    buildStack();
+    // Fire the lock-on pulse · glow for ~1.2s then back to matte
+    firePulse();
+  }
+
+  function firePulse() {
+    const activeItem = rosterEl.querySelector('.lb-item.is-active');
+    if (activeItem) {
+      activeItem.classList.remove('lb-pulse');
+      // Force reflow so the class re-add restarts the animation cleanly
+      void activeItem.offsetWidth;
+      activeItem.classList.add('lb-pulse');
+      setTimeout(() => activeItem.classList.remove('lb-pulse'), 1300);
+    }
+    stackEl.classList.remove('lb-pulse');
+    void stackEl.offsetWidth;
+    stackEl.classList.add('lb-pulse');
+    setTimeout(() => stackEl.classList.remove('lb-pulse'), 1300);
+  }
+
+  // Allow clicking a roster item as an alternative to scroll; we clamp
+  // the page scroll to the corresponding band so the rest of the machine
+  // (Earth rotation, accents) follows.
+  rosterEl.addEventListener('click', (ev) => {
+    const li = ev.target.closest('.lb-item');
+    if (!li) return;
+    const i = Number(li.dataset.idx);
+    const max = document.body.scrollHeight - window.innerHeight;
+    // Scroll to the midpoint of this category's band
+    const band = (MENU_END - MENU_FULL) / data.length;
+    const targetT = MENU_FULL + band * (i + 0.5);
+    window.scrollTo({ top: targetT * max, behavior: 'smooth' });
+  });
+
+  // Load live data if present
+  fetch('./solutions.json', { cache: 'no-cache' })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { if (d) data = d; buildRoster(); applyActive(); })
+    .catch(() => { buildRoster(); applyActive(); });
+
+  // ─── Per-frame tick ───
+  function render(t) {
+    // Fade the entire letterbox in during the menu entry range
+    const op = easeInOutCubic(range(t, MENU_ENTER, MENU_FULL));
+    root.style.opacity = op.toFixed(3);
+    root.setAttribute('data-active', op > 0.9 ? 'true' : 'false');
+
+    // Map scroll → active index across the menu band
+    if (t >= MENU_FULL) {
+      const band = (MENU_END - MENU_FULL) / data.length;
+      const raw = (t - MENU_FULL) / band;  // 0 → data.length
+      const clamped = clamp(raw, 0, data.length - 0.0001);
+      const newTarget = Math.floor(clamped);
+
+      if (newTarget !== targetIdx) {
+        targetIdx = newTarget;
+        applyActive();
+        lastLockedIdx = targetIdx;
+      }
+      // Smooth index for Earth rotation uses the raw continuous position
+      // so the globe tweens fluidly even while the roster snaps.
+      currentIdx = smoothDamp(currentIdx, clamped, idxVel, 0.28, 1 / 60);
+    } else {
+      // Before menu engages, keep index at 0 for Earth continuity
+      currentIdx = smoothDamp(currentIdx, 0, idxVel, 0.28, 1 / 60);
+      if (targetIdx !== 0) {
+        targetIdx = 0;
+        applyActive();
       }
     }
   }
 
-  return { setActive };
+  return {
+    render,
+    get count()        { return data.length; },
+    get index()        { return targetIdx; },
+    get smoothIndex()  { return currentIdx; },
+  };
 })();
 
-
-// ─── Solutions dial · Earth is the knob ──────────────────────────────────
-// Once the climax lands, the dial activates. The active petal floats above
-// Earth; the others are parked and invisible. prev/next buttons, dots, and
-// arrow keys rotate through. Earth's longitude rotates in sync so it reads
-// as "you're spinning the globe to a new region / solution".
-
-const SolutionsDial = (() => {
-  const selector   = document.getElementById('solutions-selector');
-  const prevBtn    = selector.querySelector('.sel-prev');
-  const nextBtn    = selector.querySelector('.sel-next');
-  const dotsWrap   = selector.querySelector('.sel-dots');
-  const COUNT      = petals.length;
-  const DEG_PER    = 360 / COUNT;  // 60°, Earth rotates this much per step
-
-  // Build pager dots once
-  const dots = [];
-  for (let i = 0; i < COUNT; i++) {
-    const d = document.createElement('button');
-    d.type = 'button';
-    d.className = 'sel-dot';
-    d.setAttribute('role', 'tab');
-    d.setAttribute('aria-label', petals[i].dataset.label || `Solution ${i + 1}`);
-    d.addEventListener('click', () => go(i));
-    dotsWrap.appendChild(d);
-    dots.push(d);
-  }
-
-  // Smoothed active index so Earth rotation tweens between positions
-  let targetIdx = 0;
-  let currentIdx = 0;
-  const idxVel = { v: 0 };
-  let active = false;
-
-  function go(i) {
-    targetIdx = ((i % COUNT) + COUNT) % COUNT;
-    updateDots();
-  }
-  function next() { go(targetIdx + 1); }
-  function prev() { go(targetIdx - 1); }
-  function updateDots() {
-    dots.forEach((d, i) => d.classList.toggle('is-active', i === targetIdx));
-  }
-
-  prevBtn.addEventListener('click', prev);
-  nextBtn.addEventListener('click', next);
-
-  // Arrow keys rotate the dial only when it's active (after the climax).
-  window.addEventListener('keydown', (ev) => {
-    if (!active) return;
-    if (ev.key === 'ArrowRight') { ev.preventDefault(); next(); }
-    if (ev.key === 'ArrowLeft')  { ev.preventDefault(); prev(); }
-  });
-
-  // Wheel rotates once the user is pinned at the end of the scroll.
-  // (Scroll is what got us here; wheel at bottom turns into rotation.)
-  let wheelCooldown = 0;
-  window.addEventListener('wheel', (ev) => {
-    if (!active) return;
-    const nearEnd = rawT > 0.985;
-    if (!nearEnd) return;
-    if (performance.now() < wheelCooldown) return;
-    if (Math.abs(ev.deltaY) < 4) return;
-    ev.preventDefault();
-    (ev.deltaY > 0 ? next : prev)();
-    wheelCooldown = performance.now() + 280;
-  }, { passive: false });
-
-  updateDots();
-
-  function render(time, dialT) {
-    // dialT ∈ [0,1] · fade the whole selector in once the climax lands
-    active = dialT > 0.6;
-    selector.setAttribute('aria-hidden', active ? 'false' : 'true');
-    selector.style.opacity = dialT.toFixed(3);
-    selector.style.pointerEvents = active ? 'auto' : 'none';
-    selector.style.transform = `translate(-50%, 0) translateY(${(1 - dialT) * 18}px)`;
-
-    // Smooth the current index toward target so transitions are glidey.
-    const dt = 1 / 60;
-    currentIdx = smoothDamp(currentIdx, targetIdx, idxVel, 0.32, dt);
-
-    // Park radius for the one-up card above Earth.
-    const ringR = Math.min(window.innerWidth, window.innerHeight) * 0.30;
-    const cardY = -ringR;
-
-    petals.forEach((el, i) => {
-      // Distance from the smoothed active index, on a circular axis [-3..3]
-      let d = i - currentIdx;
-      d = ((d + COUNT / 2) % COUNT + COUNT) % COUNT - COUNT / 2;
-      const absD = Math.abs(d);
-
-      // Only the active card is visible. Neighbors hint with low opacity
-      // during the transition, everything else is hidden.
-      const activeWeight = clamp(1 - absD, 0, 1);   // 1 at center, 0 at |d|>=1
-      const neighborHint = clamp(1.35 - absD, 0, 1) * 0.18;
-      const opacity = (activeWeight + neighborHint) * dialT;
-
-      // Slight horizontal parallax so neighbors peek in from the side they
-      // are rotating from. This sells "earth is spinning, card is changing".
-      const px = d * 120;                           // neighbors offset sideways
-      const scale = lerp(0.78, 1, activeWeight);
-      const idleY = Math.sin(time * 0.0008 + i) * 3;
-
-      el.style.transform =
-        `translate(-50%, -50%) translate(${px}px, ${cardY + idleY}px) scale(${scale})`;
-      el.style.opacity = opacity.toFixed(3);
-      el.style.pointerEvents = activeWeight > 0.9 && active ? 'auto' : 'none';
-      el.classList.toggle('is-active', activeWeight > 0.9);
-    });
-  }
-
-  return { render, go, next, prev,
-           get index() { return targetIdx; },
-           get smoothIndex() { return currentIdx; } };
-})();
-
-// Expose for the earth camera and for dev console poking.
-window.SolutionsDial = SolutionsDial;
+// Expose for dev console / the earth camera
+window.Letterbox = Letterbox;
 
 
 // ─── Scroll → smoothed progress ────────────────────────────────────────
