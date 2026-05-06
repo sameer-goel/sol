@@ -19,59 +19,61 @@
     // ── LEFT: Apple logo + app menu items ──
     '<div class="mh-left">' +
       '<div class="mh-item mh-apple" tabindex="0" aria-label="SameerAI">' +
+        // Duochrome Atom (v2-03 · from ai-atom-v2.html) · cyan + pink +
+        // white orbits around a violet→indigo proton. Electrons travel
+        // along each orbit via animateMotion.
         '<svg class="mh-atom" viewBox="-60 -60 120 120">' +
           '<defs>' +
-            '<linearGradient id="mh-orb-cyan" x1="-1" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">' +
-              '<stop offset="0" stop-color="#00d2ff" stop-opacity="0"/>' +
-              '<stop offset="0.15" stop-color="#00d2ff" stop-opacity="0.6"/>' +
-              '<stop offset="0.5" stop-color="#ffffff"/>' +
-              '<stop offset="0.85" stop-color="#00d2ff" stop-opacity="0.6"/>' +
-              '<stop offset="1" stop-color="#00d2ff" stop-opacity="0"/>' +
+            '<linearGradient id="mh-orb-cyan" x1="0" y1="0" x2="1" y2="0">' +
+              '<stop offset="0" stop-color="#00d2ff"/>' +
+              '<stop offset="1" stop-color="#3a7bd5"/>' +
             '</linearGradient>' +
-            '<linearGradient id="mh-orb-pink" x1="-1" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">' +
-              '<stop offset="0" stop-color="#ff6b9d" stop-opacity="0"/>' +
-              '<stop offset="0.15" stop-color="#ff6b9d" stop-opacity="0.6"/>' +
-              '<stop offset="0.5" stop-color="#c4a0ff"/>' +
-              '<stop offset="0.85" stop-color="#ff6b9d" stop-opacity="0.6"/>' +
-              '<stop offset="1" stop-color="#ff6b9d" stop-opacity="0"/>' +
+            '<linearGradient id="mh-orb-pink" x1="0" y1="0" x2="1" y2="0">' +
+              '<stop offset="0" stop-color="#ff6b9d"/>' +
+              '<stop offset="1" stop-color="#c4a0ff"/>' +
             '</linearGradient>' +
-            '<linearGradient id="mh-orb-white" x1="-1" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">' +
-              '<stop offset="0" stop-color="#a8d4ff" stop-opacity="0"/>' +
-              '<stop offset="0.15" stop-color="#a8d4ff" stop-opacity="0.6"/>' +
-              '<stop offset="0.5" stop-color="#ffffff"/>' +
-              '<stop offset="0.85" stop-color="#a8d4ff" stop-opacity="0.6"/>' +
-              '<stop offset="1" stop-color="#a8d4ff" stop-opacity="0"/>' +
+            '<linearGradient id="mh-orb-white" x1="0" y1="0" x2="1" y2="0">' +
+              '<stop offset="0" stop-color="#a8d4ff"/>' +
+              '<stop offset="1" stop-color="#ffffff"/>' +
             '</linearGradient>' +
             '<radialGradient id="mh-proton" cx="0.3" cy="0.3">' +
               '<stop offset="0" stop-color="#ffffff"/>' +
-              '<stop offset="0.25" stop-color="#c4a0ff"/>' +
-              '<stop offset="0.55" stop-color="#3a7bd5"/>' +
+              '<stop offset="0.3" stop-color="#c4a0ff"/>' +
+              '<stop offset="0.7" stop-color="#3a7bd5"/>' +
               '<stop offset="1" stop-color="#1a0a3e"/>' +
             '</radialGradient>' +
           '</defs>' +
-          '<g class="mh-orbit mh-orbit-1">' +
-            '<ellipse rx="48" ry="18" fill="none" stroke="url(#mh-orb-cyan)" stroke-width="3"/>' +
-            '<circle r="6" fill="#00d2ff" filter="drop-shadow(0 0 4px #00d2ff)">' +
-              '<animateMotion dur="14s" repeatCount="indefinite"' +
+
+          // Orbit 1 · cyan
+          '<g>' +
+            '<ellipse rx="48" ry="18" fill="none" stroke="url(#mh-orb-cyan)" stroke-width="1.8"/>' +
+            '<circle r="4" fill="#00d2ff" filter="drop-shadow(0 0 6px #00d2ff)">' +
+              '<animateMotion dur="3s" repeatCount="indefinite"' +
                 ' path="M 48 0 A 48 18 0 1 1 -48 0 A 48 18 0 1 1 48 0 Z"/>' +
             '</circle>' +
           '</g>' +
-          '<g class="mh-orbit mh-orbit-2" transform="rotate(60)">' +
-            '<ellipse rx="48" ry="18" fill="none" stroke="url(#mh-orb-pink)" stroke-width="3"/>' +
-            '<circle r="6" fill="#ff6b9d" filter="drop-shadow(0 0 4px #ff6b9d)">' +
-              '<animateMotion dur="18s" repeatCount="indefinite"' +
+
+          // Orbit 2 · pink (rotated 60°)
+          '<g transform="rotate(60)">' +
+            '<ellipse rx="48" ry="18" fill="none" stroke="url(#mh-orb-pink)" stroke-width="1.8"/>' +
+            '<circle r="4" fill="#ff6b9d" filter="drop-shadow(0 0 6px #ff6b9d)">' +
+              '<animateMotion dur="3.5s" repeatCount="indefinite"' +
                 ' path="M 48 0 A 48 18 0 1 1 -48 0 A 48 18 0 1 1 48 0 Z"/>' +
             '</circle>' +
           '</g>' +
-          '<g class="mh-orbit mh-orbit-3" transform="rotate(-60)">' +
-            '<ellipse rx="48" ry="18" fill="none" stroke="url(#mh-orb-white)" stroke-width="3"/>' +
-            '<circle r="6" fill="#ffffff" filter="drop-shadow(0 0 4px #ffffff)">' +
-              '<animateMotion dur="22s" repeatCount="indefinite"' +
+
+          // Orbit 3 · white (rotated -60°)
+          '<g transform="rotate(-60)">' +
+            '<ellipse rx="48" ry="18" fill="none" stroke="url(#mh-orb-white)" stroke-width="1.8"/>' +
+            '<circle r="4" fill="#ffffff" filter="drop-shadow(0 0 6px #ffffff)">' +
+              '<animateMotion dur="4s" repeatCount="indefinite"' +
                 ' path="M 48 0 A 48 18 0 1 1 -48 0 A 48 18 0 1 1 48 0 Z"/>' +
             '</circle>' +
           '</g>' +
-          '<circle r="14" fill="url(#mh-proton)">' +
-            '<animate attributeName="r" values="13;15;13" dur="4s" repeatCount="indefinite"/>' +
+
+          // Proton · pulsing
+          '<circle r="13" fill="url(#mh-proton)">' +
+            '<animate attributeName="r" values="12;14;12" dur="2s" repeatCount="indefinite"/>' +
           '</circle>' +
         '</svg>' +
       '</div>' +
@@ -143,16 +145,12 @@
 
     /* Apple logo slot now holds the atom */
     '.mh-apple{padding:0 8px;display:flex;align-items:center;justify-content:center}' +
+    // At 20px the atom is small · the orbit strokes + electrons must
+    // remain crisp so we render at full SVG resolution.
     '.mh-atom{width:20px;height:20px;display:block;' +
       'animation:mh-atom-spin 30s linear infinite;' +
       'transform-origin:50% 50%}' +
-    '.mh-orbit-1{animation:mh-atom-tilt-1 40s linear infinite;transform-origin:50% 50%}' +
-    '.mh-orbit-2{animation:mh-atom-tilt-2 50s linear infinite;transform-origin:50% 50%}' +
-    '.mh-orbit-3{animation:mh-atom-tilt-3 60s linear infinite;transform-origin:50% 50%}' +
     '@keyframes mh-atom-spin{to{transform:rotate(360deg)}}' +
-    '@keyframes mh-atom-tilt-1{from{transform:rotate(0)}to{transform:rotate(360deg)}}' +
-    '@keyframes mh-atom-tilt-2{from{transform:rotate(60deg)}to{transform:rotate(420deg)}}' +
-    '@keyframes mh-atom-tilt-3{from{transform:rotate(-60deg)}to{transform:rotate(300deg)}}' +
 
     /* Bold app name (first item after apple) */
     '.mh-bold{font-weight:600;letter-spacing:0.005em}' +
