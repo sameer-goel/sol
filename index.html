@@ -37,28 +37,8 @@
   </div>
   <div class="vignette" aria-hidden="true"></div>
 
-  <!-- Bluish atmosphere halo · grows as Earth arrives. Dark → azure gradient. -->
+  <!-- Bluish atmosphere halo · tight rim when Earth arrives (elevation-only). -->
   <div id="atmosphere" aria-hidden="true"></div>
-
-  <!-- ========================================================
-       z=2a · Split-screen stock footage. Dockable under the
-       menu beat. Left = crisis/war, right = people helping.
-       Drop any .mp4 at the data-src paths and they'll show.
-       ======================================================== -->
-  <div id="footage" aria-hidden="true">
-    <div class="footage-side footage-left">
-      <video class="footage-video" playsinline muted loop preload="metadata"
-             data-src="./assets/footage-war.mp4"></video>
-      <div class="footage-shade"></div>
-      <div class="footage-label">the world as it is</div>
-    </div>
-    <div class="footage-side footage-right">
-      <video class="footage-video" playsinline muted loop preload="metadata"
-             data-src="./assets/footage-help.mp4"></video>
-      <div class="footage-shade"></div>
-      <div class="footage-label">the world we build together</div>
-    </div>
-  </div>
 
   <!-- ========================================================
        z=2 · The two intelligences. Canvas-driven, scroll-timed.
@@ -77,54 +57,22 @@
       <div class="intel-ring" aria-hidden="true"></div>
     </div>
 
-    <!-- Six solution petals — surface one at a time as Earth rotates.
-         Earth is the dial; one card floats above it. -->
-    <div class="petal" style="--accent: #ff6b4a;" data-label="Crisis Support">
-      <span>Crisis Support</span>
-    </div>
-    <div class="petal" style="--accent: #5ab8ff;" data-label="Mental Health">
-      <span>Mental Health</span>
-    </div>
-    <div class="petal" style="--accent: #b78bff;" data-label="Meaningful AI">
-      <span>Meaningful AI</span>
-    </div>
-    <div class="petal" style="--accent: #ffc54a;" data-label="Kids Education">
-      <span>Kids Education</span>
-    </div>
-    <div class="petal" style="--accent: #6bd6a0;" data-label="Self-help Tools">
-      <span>Self-help Tools</span>
-    </div>
-    <div class="petal" style="--accent: #4aa373;" data-label="Sustainability">
-      <span>Sustainability</span>
-    </div>
+    <!-- No in-stage card · the letterbox section below takes over during menu -->
 
   </div>
 
   <!-- ========================================================
-       z=4 · Solutions dial. Appears once Earth has settled.
-       Earth itself is the knob — prev/next rotate the globe
-       and surface a new solution.
+       z=4 · Letterbox · split-letter menu. Full 7 roster on the
+       left (active promoted to cinematic serif). Right side is
+       the active category's glyph + tagline + project links.
+       Scroll is the only navigation — one viewport per category.
        ======================================================== -->
-  <div id="solutions-selector" aria-hidden="true">
-    <button class="sel-arrow sel-prev" type="button" aria-label="Previous solution">
-      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-        <path d="M10 2 L4 8 L10 14" stroke="currentColor" stroke-width="1.4"
-              fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
-    <div class="sel-dots" role="tablist" aria-label="Solutions"></div>
-    <button class="sel-arrow sel-next" type="button" aria-label="Next solution">
-      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-        <path d="M6 2 L12 8 L6 14" stroke="currentColor" stroke-width="1.4"
-              fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
-    <div class="sel-hint" aria-hidden="true">
-      rotate earth ·
-      <kbd>←</kbd><kbd>→</kbd>
-      · or scroll
+  <section id="letterbox" aria-hidden="true" aria-label="Solutions portfolio">
+    <div class="lb-inner">
+      <ol class="lb-roster" id="lb-roster"></ol>
+      <aside class="lb-stack" id="lb-stack"></aside>
     </div>
-  </div>
+  </section>
 
   <!-- ========================================================
        z=3 · Narration layer. Full-viewport editorial type.
@@ -150,10 +98,6 @@
     </div>
     <div class="beat climax" data-beat="5">
       <div class="line">A <em class="earth">Meaningful World</em> of Tomorrow.</div>
-    </div>
-    <div class="beat" data-beat="6">
-      <div class="line">Our portfolio of <em>solutions.</em></div>
-      <div class="sub">Choose a cause · Earth is the dial</div>
     </div>
   </div>
 
