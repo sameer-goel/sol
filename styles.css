@@ -1,9 +1,9 @@
 /* ============================================================
-   ACT I · DIRECTOR'S CUT — build 20260506-1020
+   ACT I · DIRECTOR'S CUT — earth.v0.3
    The Meaningful World · disposable / experimental
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@300;400;500;600&family=Share+Tech+Mono&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -43,32 +43,140 @@ body { min-height: 100vh; }
 #scroll-spacer { height: 1300vh; pointer-events: none; }
 
 /* ------------------------------------------------------------
-   Build stamp
+   Tahoe header · hidden throughout the scroll journey, only
+   revealed at the very end when the user has reached t > 0.97.
+   The header's own code adds `.ready` as soon as the lock screen
+   is gone — we override that here so we can gate it on scroll.
+   Director toggles `<html>.is-desktop` to bring the header in.
    ------------------------------------------------------------ */
-#build-stamp {
+#mac-header {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.6s ease !important;
+}
+html.is-desktop #mac-header {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* ------------------------------------------------------------
+   Version badge · bumped manually on layout/feature shifts.
+   Tiny pill in the top-right so it's obvious at a glance which
+   iteration you're viewing. Cheaper than a build timestamp,
+   easier to reference in conversation.
+   ------------------------------------------------------------ */
+#version {
   position: fixed;
-  top: 10px; right: 12px;
+  top: 14px;
+  right: 16px;
   z-index: 100;
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.3);
-  background: rgba(0, 0, 0, 0.4);
-  border: 0.5px solid rgba(255, 255, 255, 0.08);
-  padding: 3px 8px;
-  border-radius: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: 'Share Tech Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: rgba(167, 216, 255, 0.85);
+  background: rgba(10, 14, 24, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  text-shadow: 0 0 6px rgba(120, 180, 255, 0.25);
   pointer-events: none;
   user-select: none;
 }
 
 /* ------------------------------------------------------------
-   Earth · masked by a scroll-driven porthole
+   Scroll-progress HUD · right edge of the screen.
+   Vertical track + fill, with live percent readout and phase tag.
+   Styled to match the LCD clock so the whole HUD feels like one
+   instrument panel.
+   ------------------------------------------------------------ */
+#scroll-hud {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hud-track {
+  position: relative;
+  width: 4px;
+  height: clamp(220px, 40vh, 360px);
+  border-radius: 4px;
+  background: rgba(167, 216, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+.hud-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--scroll-pct, 0) * 1%);
+  border-radius: inherit;
+  background: linear-gradient(180deg,
+    #a7d8ff 0%,
+    color-mix(in oklab, var(--accent, #a7d8ff) 50%, #a7d8ff) 100%);
+  box-shadow: 0 0 6px color-mix(in oklab, var(--accent, #a7d8ff) 40%, rgba(120,180,255,0.25));
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* Tick marks at phase boundaries so you can see at a glance
+   where the scroll currently is inside the narrative.           */
+.hud-marks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.hud-marks span {
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.hud-readout {
+  font-family: 'Share Tech Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  text-align: right;
+  min-width: 6ch;
+}
+.hud-pct {
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: #a7d8ff;
+  text-shadow: 0 0 6px rgba(120, 180, 255, 0.3);
+}
+.hud-phase {
+  margin-top: 4px;
+  font-size: 8px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(167, 216, 255, 0.55);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------
+   Earth · masked by a scroll-driven porthole.
+   The whole scene (canvas + mask) pans horizontally via --earth-pan
+   so Earth can dock on the left for the menu phase. Because the mask
+   moves with the canvas, the porthole follows Earth — the bleed edge
+   never reveals empty space.
    ------------------------------------------------------------ */
 #scene-root {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  transform: translateX(var(--earth-pan, 0px));
+  transition: none;              /* driven smoothly by JS each frame */
+  will-change: transform;
   --mask-inner: calc(var(--reveal-radius) - var(--reveal-feather));
   -webkit-mask-image: radial-gradient(
     circle at 50% 50%,
@@ -159,21 +267,21 @@ body { min-height: 100vh; }
 }
 
 /* ------------------------------------------------------------
-   Atmosphere · a tight rim right at Earth's edge, nothing more.
-   No ambient wash across the screen. Glow = layer elevation only.
+   Atmosphere · tight rim at Earth's edge. During the menu phase
+   the rim picks up the active category's accent color so Earth's
+   halo reflects the scene's emotional temperature.
    ------------------------------------------------------------ */
 #atmosphere {
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  /* Subtle top-of-Earth highlight · reads as rim light, not scene wash */
   background:
     radial-gradient(ellipse at 50% 55%,
-      rgba(120, 180, 255, 0.08) 0%,
+      color-mix(in oklab, var(--accent, #78b4ff) 18%, transparent) 0%,
       transparent 22%);
   opacity: calc(var(--atmosphere, 0) * 0.9);
-  transition: opacity 0.4s linear;
+  transition: opacity 0.4s linear, background 0.6s ease;
 }
 /* Keep the canvas dark and clean. No body tinting. */
 html { background: #050a14; }
@@ -302,11 +410,12 @@ html[data-highlight="both"] .artificial-intel .intel-ring {
 }
 
 /* ------------------------------------------------------------
-   Letterbox menu · split-letter layout
-   Left: the 7 roster list (active = cinematic serif).
-   Right: glass stack with glyph tile + name + tagline + links.
-   Elevation-only aesthetic — glow reserved for hover + the
-   activation pulse that fires right after each scroll-rotation.
+   Letterbox menu · top pill bar + left-side hero + right stack.
+   - Top: all 7 categories visible as pills; active is highlighted
+   - Earth sits on the left (driven by camera look-offset)
+   - Right of Earth: the active category name in giant serif
+   - Far right: glass stack with glyph + tagline + project links
+   Elevation-only aesthetic; glow only on hover / lock-on pulse.
    ------------------------------------------------------------ */
 #letterbox {
   position: fixed;
@@ -318,177 +427,484 @@ html[data-highlight="both"] .artificial-intel .intel-ring {
 }
 #letterbox[data-active="true"] { pointer-events: auto; }
 
+/* --- Top pill bar · independent of the letterbox fade. Fades in once
+       the login dismisses, and stays visible through the whole journey
+       so the user can jump back to any category at any time. --- */
+.lb-topbar {
+  position: fixed;
+  top: clamp(20px, 3vh, 44px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: rgba(10, 14, 24, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 24px rgba(0, 0, 0, 0.35);
+  max-width: min(96vw, 980px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  pointer-events: auto;
+  z-index: 50;            /* above letterbox stage, below lock screen */
+  opacity: 0;             /* hidden initially · fades in post-login */
+  transition: opacity 0.6s ease;
+}
+.lb-topbar.is-ready { opacity: 1; }
+.lb-topbar::-webkit-scrollbar { display: none; }
+
+.lb-pill {
+  --item-accent: rgba(255, 255, 255, 0.6);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-dim);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.25s ease, background 0.25s ease,
+              border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.lb-pill:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.04);
+}
+.lb-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  flex-shrink: 0;
+}
+.lb-pill.is-active {
+  color: var(--ink);
+  background: color-mix(in oklab, var(--item-accent) 14%, rgba(255, 255, 255, 0.04));
+  border-color: color-mix(in oklab, var(--item-accent) 30%, rgba(255, 255, 255, 0.12));
+}
+.lb-pill.is-active::before {
+  background: var(--item-accent);
+  box-shadow: inset 0 0 0 1px var(--item-accent);
+}
+/* Lock-on glow on the active pill · ~1.2s pulse */
+.lb-pill.is-active.lb-pulse {
+  animation: lb-pill-pulse 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes lb-pill-pulse {
+  0%   { box-shadow: 0 0 0 transparent; }
+  40%  { box-shadow: 0 0 18px color-mix(in oklab, var(--item-accent) 55%, transparent); }
+  100% { box-shadow: 0 0 0 transparent; }
+}
+
+/* --- Top-left title badge · Number + category name.
+       Sits above Earth's upper-left region; tracks earth-right-px so on
+       short screens it doesn't crash into the globe. --- */
+.lb-title {
+  position: absolute;
+  top: clamp(72px, 9vh, 112px);
+  left: clamp(20px, 3vw, 40px);
+  /* Cap at a ratio of Earth's width so the title never reaches into content */
+  max-width: min(36vw, calc(var(--earth-right-px, 40vw) - 60px));
+  pointer-events: auto;
+}
+@media (max-width: 860px) {
+  .lb-title {
+    position: relative;
+    top: auto; left: auto;
+    max-width: 100%;
+    padding: 4px clamp(20px, 4vw, 32px) 0;
+  }
+}
+.lb-title .lb-title-num {
+  display: block;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 10px;
+}
+.lb-title .lb-title-name {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(30px, 3.2vw, 48px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.lb-title .lb-title-name em {
+  font-style: italic;
+  color: color-mix(in oklab, var(--accent, white) 60%, white 40%);
+}
+.lb-title.lb-pulse .lb-title-name {
+  animation: lb-title-pulse 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes lb-title-pulse {
+  0%   { text-shadow: 0 0 0 transparent; }
+  40%  { text-shadow: 0 0 24px color-mix(in oklab, var(--accent, white) 45%, transparent); }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+
+/* --- Inner layout · Earth fills the left of the screen; the right side
+       carries both the story (top) and apps (bottom). The left padding
+       is LIVE — driven from director.js's `--earth-right-px` — so the
+       content column always starts flush against Earth's right edge,
+       regardless of viewport height or zoom. Gutter keeps them apart. --- */
 .lb-inner {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) auto;
-  align-items: center;
-  gap: clamp(40px, 6vw, 120px);
-  padding: 0 clamp(28px, 6vw, 96px);
+  grid-template-rows: 1fr 1fr;
+  align-items: stretch;
+
+  /* Content starts wherever Earth ends · + a 32–72px breathing gutter.
+     Clamp prevents the column from getting unusably narrow on tiny
+     screens or unreasonably wide on 4K. */
+  --lb-gutter: clamp(32px, 4vw, 72px);
+  --lb-left-edge: calc(var(--earth-right-px, 40vw) + var(--lb-gutter));
+  --lb-right-edge: clamp(32px, 4vw, 56px);
+
+  padding:
+    clamp(82px, 11vh, 120px)
+    var(--lb-right-edge)
+    clamp(26px, 4vh, 48px)
+    var(--lb-left-edge);
+  gap: clamp(16px, 2.4vh, 32px);
 }
 
-/* --- Roster (left) --- */
-.lb-roster {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: clamp(8px, 1vh, 16px);
-  max-width: 20ch;
-}
-.lb-item {
-  --item-accent: rgba(255, 255, 255, 0.5);
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  cursor: pointer;
-  color: var(--ink-faint);
-  font-family: var(--serif);
-  font-weight: 300;
-  font-size: clamp(15px, 1.4vw, 20px);
-  letter-spacing: -0.005em;
-  line-height: 1.12;
-  background: transparent;
-  border: none;
-  padding: 0;
-  text-align: left;
-  pointer-events: auto;
-  transition:
-    color 0.35s ease,
-    font-size 0.55s cubic-bezier(0.2, 0.8, 0.2, 1),
-    transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.lb-item:hover {
-  color: var(--ink-dim);
-  transform: translateX(4px);
-}
-.lb-item .lb-num {
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  font-size: 9px;
-  letter-spacing: 0.18em;
-  color: var(--ink-faint);
-  opacity: 0.55;
-  flex-shrink: 0;
-  padding-top: 4px;
-  transition: color 0.35s ease, opacity 0.35s ease, font-size 0.45s ease;
-}
-.lb-item .lb-dot {
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: transparent;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
-  flex-shrink: 0;
-  margin-bottom: 4px;
-  transition: background 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+/* --- Mobile · Earth gets smaller, content stacks below it ----------- */
+@media (max-width: 860px) {
+  .lb-inner {
+    grid-template-rows: auto auto;
+    padding:
+      clamp(72px, 10vh, 96px)
+      clamp(20px, 4vw, 32px)
+      clamp(24px, 4vh, 48px)
+      clamp(20px, 4vw, 32px);
+    gap: 24px;
+  }
 }
 
-/* Active roster item · cinematic promotion · no ambient glow, only a
-   lift and accent tint. The .lb-pulse class is added by JS for ~1.2s
-   right after a rotation lands, firing the signature glow burst. */
-.lb-item.is-active {
-  color: color-mix(in oklab, var(--item-accent) 22%, white 78%);
-  font-size: clamp(36px, 5.2vw, 78px);
-  font-weight: 300;
-  line-height: 0.96;
-  letter-spacing: -0.02em;
-  margin: clamp(4px, 0.8vh, 10px) 0;
-}
-.lb-item.is-active em {
-  font-style: italic;
-  color: color-mix(in oklab, var(--item-accent) 60%, white 40%);
-}
-.lb-item.is-active .lb-num {
-  font-size: 10px;
-  color: color-mix(in oklab, var(--item-accent) 70%, white 25%);
-  opacity: 1;
-  padding-top: 16px;
-}
-.lb-item.is-active .lb-dot {
-  background: var(--item-accent);
-  box-shadow: inset 0 0 0 1px var(--item-accent);
-  transform: scale(1.25);
-}
-/* Activation pulse · fires for ~1.2s after rotation lock-on */
-.lb-item.is-active.lb-pulse {
-  animation: lb-item-pulse 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.lb-item.is-active.lb-pulse .lb-dot {
-  animation: lb-dot-pulse 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-@keyframes lb-item-pulse {
-  0%   { text-shadow: 0 0 0 transparent; }
-  40%  { text-shadow: 0 0 24px color-mix(in oklab, var(--item-accent) 55%, transparent); }
-  100% { text-shadow: 0 0 0 transparent; }
-}
-@keyframes lb-dot-pulse {
-  0%   { box-shadow: 0 0 0 transparent, inset 0 0 0 1px var(--item-accent); }
-  40%  { box-shadow: 0 0 16px var(--item-accent), inset 0 0 0 1px var(--item-accent); }
-  100% { box-shadow: 0 0 0 transparent, inset 0 0 0 1px var(--item-accent); }
-}
-
-/* --- Right stack (glass panel with glyph + links) --- */
-.lb-stack {
-  width: min(360px, 32vw);
-  padding: 24px;
-  border-radius: 22px;
-  background:
-    linear-gradient(160deg,
-      color-mix(in oklab, var(--accent, #ffffff) 7%, rgba(14, 18, 32, 0.72)) 0%,
-      color-mix(in oklab, var(--accent, #ffffff) 3%, rgba(10, 14, 24, 0.88)) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  /* Elevation only · no colored bloom around the panel */
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.10),
-    0 16px 40px rgba(0, 0, 0, 0.55),
-    0 2px 8px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+/* --- Story column · three labeled glass panes (Problem / Analysis /
+       Solution). Each pane matches the pill-bar glass language (dark
+       frosted body, thin border, top-highlight) and reveals on scroll
+       as the user moves through the category band. --- */
+.lb-story {
+  align-self: end;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: clamp(14px, 2vh, 24px);
+  width: 100%;
+  max-width: 780px;
   pointer-events: auto;
+  padding-bottom: clamp(8px, 1vh, 16px);
 }
 
-.lb-stack header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+/* A pane · pill-style label on the left + body copy on the right. */
+.lb-pane {
+  --accent: white;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 16px;
+  padding: 14px 18px 14px 14px;
+  border-radius: 18px;
+
+  /* Frosted glass · same language as the pill bar */
+  background: rgba(10, 14, 24, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 24px rgba(0, 0, 0, 0.35);
+
+  /* Scroll-reveal default state: held below, transparent. The
+     .is-revealed class (toggled by director.js) brings it into place. */
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.7s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.5s ease,
+    box-shadow 0.5s ease;
+  will-change: opacity, transform;
 }
-.lb-glass {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  flex-shrink: 0;
+.lb-pane.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Label pill · mirrors the top pill bar style · accent-tinted */
+.lb-pane-label {
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--accent) 18%, rgba(10, 14, 26, 0.6));
+  border: 1px solid color-mix(in oklab, var(--accent) 40%, rgba(255, 255, 255, 0.14));
+  color: color-mix(in oklab, var(--accent) 65%, white 30%);
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+  margin-top: 4px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 10px color-mix(in oklab, var(--accent) 22%, transparent);
+}
+
+/* Body copy · tuned per pane type so the hierarchy still reads. */
+.lb-pane-body {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.88);
+  text-wrap: balance;
+}
+.lb-pane.is-problem .lb-pane-body {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: clamp(14px, 1.15vw, 17px);
+  line-height: 1.5;
+}
+.lb-pane.is-analysis .lb-pane-body {
+  /* Analysis = the pivot · italic serif, largest, accent-tinted hero */
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(20px, 2vw, 30px);
+  line-height: 1.22;
+  letter-spacing: -0.005em;
+  color: color-mix(in oklab, var(--accent) 15%, white 85%);
+}
+.lb-pane.is-solution .lb-pane-body {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(16px, 1.4vw, 20px);
+  line-height: 1.4;
+  color: color-mix(in oklab, var(--accent) 6%, white 94%);
+}
+
+/* Lock-on pulse when a new category lands · a light passes over the
+   active Analysis pane (the most cinematic of the three) */
+.lb-story.lb-pulse .lb-pane.is-analysis {
+  animation: lb-analysis-pulse 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes lb-analysis-pulse {
+  0%   { box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 24px rgba(0,0,0,0.35); }
+  40%  { box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 10px 24px rgba(0,0,0,0.35),
+                     0 0 28px color-mix(in oklab, var(--accent) 45%, transparent); }
+  100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 24px rgba(0,0,0,0.35); }
+}
+
+/* Glow word inside any pane body · the keyword that carries weight */
+.lb-pane-body .glow-word {
+  color: color-mix(in oklab, var(--accent) 72%, white 28%);
+  text-shadow: 0 0 14px color-mix(in oklab, var(--accent) 55%, transparent);
+  font-weight: 500;
+}
+.lb-pane.is-analysis .lb-pane-body .glow-word {
+  font-weight: 400;
+  text-shadow: 0 0 20px color-mix(in oklab, var(--accent) 65%, transparent);
+}
+
+/* Soft italic emphasis · rhythm word */
+.lb-pane-body .soft-em {
+  font-style: italic;
+  color: color-mix(in oklab, var(--accent) 22%, white 78%);
+  font-weight: inherit;
+}
+
+/* --- Apps row · HERO cards. The payoff of the narrative above.
+       Hidden until the user has scrolled past the Solution pane. --- */
+.lb-apps {
+  align-self: start;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: clamp(14px, 1.8vw, 22px);
+  pointer-events: auto;
+  padding-top: clamp(4px, 1vh, 10px);
+
+  /* Scroll-reveal: match the pane reveal pattern so the whole scene
+     rises into place coherently. */
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.7s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.lb-apps.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+.lb-apps-label {
+  grid-column: 1 / -1;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--accent, white) 50%, white 35%);
+  margin-bottom: 4px;
+  opacity: 0.85;
+}
+
+/* HERO app card · glyph tile on left, copy stack on right, CTA row
+   at the bottom. This is the product speaking for itself, not a link pill. */
+.lb-app {
+  --accent: #ffffff;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto auto;
+  column-gap: 16px;
+  row-gap: 10px;
+  padding: 18px 20px 16px;
+  border-radius: 18px;
+  background:
+    linear-gradient(160deg,
+      color-mix(in oklab, var(--accent) 9%, rgba(14, 18, 32, 0.72)) 0%,
+      color-mix(in oklab, var(--accent) 3%, rgba(10, 14, 24, 0.88)) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 26px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+.lb-app:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in oklab, var(--accent) 45%, rgba(255, 255, 255, 0.14));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 16px 36px rgba(0, 0, 0, 0.55),
+    0 0 32px color-mix(in oklab, var(--accent) 30%, transparent);
+}
+
+/* Glyph tile · big enough to read the icon clearly */
+.lb-app-glass {
+  grid-row: 1 / 3;
+  grid-column: 1;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   display: grid;
   place-items: center;
   background:
     linear-gradient(160deg,
-      color-mix(in oklab, var(--accent) 14%, rgba(16, 22, 38, 0.72)) 0%,
-      color-mix(in oklab, var(--accent) 6%,  rgba(10, 14, 24, 0.88)) 100%);
-  border: 1px solid color-mix(in oklab, var(--accent) 22%, rgba(255, 255, 255, 0.1));
+      color-mix(in oklab, var(--accent) 18%, rgba(16, 22, 38, 0.72)) 0%,
+      color-mix(in oklab, var(--accent) 8%,  rgba(10, 14, 24, 0.88)) 100%);
+  border: 1px solid color-mix(in oklab, var(--accent) 32%, rgba(255, 255, 255, 0.14));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 8px 18px rgba(0, 0, 0, 0.4);
-  transition: box-shadow 0.35s ease, border-color 0.35s ease;
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 6px 12px rgba(0, 0, 0, 0.35);
+  color: color-mix(in oklab, var(--accent) 75%, white 22%);
+  flex-shrink: 0;
 }
-.lb-stack.lb-pulse .lb-glass {
-  /* Brief lock-on glow only while the pulse class is present */
-  animation: lb-glass-pulse 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-@keyframes lb-glass-pulse {
-  0%   { box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 8px 18px rgba(0,0,0,0.4), 0 0 0 transparent; }
-  40%  { box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 22px rgba(0,0,0,0.5),
-                     0 0 32px color-mix(in oklab, var(--accent) 55%, transparent); }
-  100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 8px 18px rgba(0,0,0,0.4), 0 0 0 transparent; }
+.lb-app-glass .lb-glyph {
+  width: 32px;
+  height: 32px;
 }
 
-.lb-glyph {
-  width: 36px;
-  height: 36px;
-  color: color-mix(in oklab, var(--accent) 70%, white 25%);
+/* App name · serif, reads as a real product title */
+.lb-app-name {
+  grid-row: 1;
+  grid-column: 2;
+  align-self: end;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(17px, 1.4vw, 20px);
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.98);
+  letter-spacing: -0.005em;
 }
+
+/* Blurb · the "what does this actually do" line */
+.lb-app-blurb {
+  grid-row: 2;
+  grid-column: 2;
+  align-self: start;
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: clamp(12.5px, 1vw, 14px);
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.65);
+  text-wrap: balance;
+}
+
+/* CTA row · subtle line + Open label that brightens on hover */
+.lb-app-cta {
+  grid-row: 3;
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--accent) 55%, white 30%);
+  font-weight: 500;
+  transition: color 0.25s ease;
+}
+.lb-app-cta::after {
+  content: 'Try it  →';
+  transition: transform 0.25s ease;
+}
+.lb-app:hover .lb-app-cta {
+  color: color-mix(in oklab, var(--accent) 80%, white 20%);
+}
+.lb-app:hover .lb-app-cta::after {
+  transform: translateX(4px);
+}
+.lb-app-tag {
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* Lock-on pulse on the apps row */
+.lb-apps.lb-pulse .lb-app {
+  animation: lb-app-land 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.lb-apps.lb-pulse .lb-app:nth-child(2) { animation-delay: 0.06s; }
+.lb-apps.lb-pulse .lb-app:nth-child(3) { animation-delay: 0.12s; }
+.lb-apps.lb-pulse .lb-app:nth-child(4) { animation-delay: 0.18s; }
+@keyframes lb-app-land {
+  0%   { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+
+/* Shared .lb-glyph for any inline category glyph (used inside .lb-app-glass) */
 .lb-glyph svg { width: 100%; height: 100%; overflow: visible; }
 .lb-glyph svg * {
   fill: none; stroke: currentColor; stroke-width: 1.5px;
@@ -505,60 +921,6 @@ html[data-highlight="both"] .artificial-intel .intel-ring {
   font-family: var(--sans); font-weight: 500; letter-spacing: 0.18em;
   opacity: 0.72; text-transform: uppercase;
 }
-
-.lb-name {
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: 22px;
-  line-height: 1.14;
-  color: var(--ink);
-}
-.lb-tag {
-  font-family: var(--sans);
-  font-size: 10px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  margin-top: 4px;
-}
-
-.lb-projects {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 6px;
-}
-.lb-projects a {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  color: var(--ink);
-  text-decoration: none;
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  border: 1px solid transparent;
-  transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
-}
-.lb-projects a:hover {
-  /* Glow only on hover · the whole point of this layout */
-  background: color-mix(in oklab, var(--accent) 10%, rgba(255, 255, 255, 0.04));
-  border-color: color-mix(in oklab, var(--accent) 35%, rgba(255, 255, 255, 0.12));
-  box-shadow: 0 0 18px color-mix(in oklab, var(--accent) 22%, transparent);
-  transform: translateX(3px);
-}
-.lb-projects a::after {
-  content: '↗';
-  opacity: 0.5;
-  font-size: 12px;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-.lb-projects a:hover::after { opacity: 1; transform: translate(2px, -2px); }
 
 /* ------------------------------------------------------------
    Glyph motion · one language, different motion per soul.
@@ -746,6 +1108,22 @@ html[data-highlight="both"] .artificial-intel .intel-ring {
   animation: earth-foil 8s ease-in-out infinite;
   filter: drop-shadow(0 0 26px rgba(255, 255, 255, 0.35));
 }
+
+/* Mission · the emphasis word on the opening beat. Same foil family
+   as Earth so the visual motifs feel related, but a quicker cycle
+   so it reads as a standalone emphasis rather than a held climax. */
+.beat em.mission {
+  font-style: italic;
+  background: linear-gradient(100deg,
+    var(--warm-bright) 0%,
+    #ffffff 45%,
+    var(--cool-bright) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: earth-foil 6s ease-in-out infinite;
+  filter: drop-shadow(0 0 16px rgba(255, 230, 180, 0.3));
+}
 @keyframes earth-foil {
   0%, 100% { background-position: 0% 50%; }
   50%      { background-position: 100% 50%; }
@@ -759,6 +1137,534 @@ html[data-highlight="both"] .artificial-intel .intel-ring {
 .beat.climax .line {
   font-size: clamp(36px, 5.4vw, 88px);
   font-weight: 300;
+}
+
+/* ------------------------------------------------------------
+   Finale thanks · closer copy that sits WITH the CTAs so they
+   appear and disappear as one cohesive unit. Replaces the
+   stand-alone `.beat.closer` narration pattern.
+   ------------------------------------------------------------ */
+.finale-thanks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.finale-thanks-1 {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(22px, 2.4vw, 36px);
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.92);
+}
+.finale-thanks-2 {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(18px, 2vw, 30px);
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.82);
+  text-wrap: balance;
+  max-width: 24ch;
+}
+
+/* Name in thanks · reads as a soft salutation */
+.closer-name {
+  font-style: italic;
+  background: linear-gradient(135deg, #cfe6ff 0%, #ffffff 50%, #ffe1b8 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 400;
+}
+
+/* "collaborate" gets the warm→cool foil gradient that we've used
+   consistently for the emotional high-point words. */
+.closer-foil {
+  font-style: italic;
+  background: linear-gradient(100deg,
+    var(--warm-bright) 0%,
+    #ffffff 30%,
+    var(--cool-bright) 60%,
+    var(--cool) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: earth-foil 8s ease-in-out infinite;
+}
+
+/* ------------------------------------------------------------
+   Finale CTA · positioned as the HERO of the final frame.
+   Sits at viewport center-bottom so it reads as the screen's
+   main action, not a footer. Primary button is oversized and
+   prominently glowing; secondary is a quiet sibling below.
+   ------------------------------------------------------------ */
+#finale-cta {
+  position: fixed;
+  left: 50%;
+  top: 58%;
+  transform: translate(-50%, -50%) translateY(24px);
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 0 clamp(20px, 4vw, 40px);
+  max-width: min(96vw, 780px);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+#finale-cta.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) translateY(0);
+  pointer-events: auto;
+}
+.finale-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.finale-replay { display: flex; justify-content: center; margin-top: 16px; }
+
+/* Shared CTA button · glass-frosted, matches the pill bar */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  color: var(--ink);
+  background: rgba(10, 14, 24, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 10px 24px rgba(0, 0, 0, 0.45);
+  transition:
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease;
+}
+.cta:hover {
+  transform: translateY(-2px);
+  background: rgba(14, 20, 32, 0.68);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 14px 30px rgba(0, 0, 0, 0.5);
+}
+.cta:active { transform: translateY(0); }
+.cta:focus-visible {
+  outline: 2px solid rgba(159, 208, 255, 0.7);
+  outline-offset: 3px;
+}
+.cta-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+}
+.cta:hover .cta-icon { background: rgba(255, 255, 255, 0.18); }
+
+/* Primary · warm accent glow on hover · reads as the main action */
+.cta-primary {
+  background: linear-gradient(180deg,
+    rgba(255, 196, 138, 0.14) 0%,
+    rgba(10, 14, 24, 0.55) 100%);
+  border-color: rgba(255, 196, 138, 0.35);
+  color: rgba(255, 244, 226, 0.98);
+}
+.cta-primary:hover {
+  background: linear-gradient(180deg,
+    rgba(255, 196, 138, 0.22) 0%,
+    rgba(14, 20, 32, 0.68) 100%);
+  border-color: rgba(255, 196, 138, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 14px 30px rgba(0, 0, 0, 0.5),
+    0 0 32px rgba(255, 180, 100, 0.28);
+}
+.cta-primary .cta-icon {
+  background: rgba(255, 196, 138, 0.18);
+  color: rgba(255, 220, 170, 1);
+}
+.cta-primary:hover .cta-icon { background: rgba(255, 196, 138, 0.32); }
+
+/* HERO variant · the Big Button at the finale. Oversized, bold type,
+   amber→warm-orange gradient fill, sustained halo (not hover-only) so
+   the eye can't miss it. This is THE call to action. */
+.cta-hero {
+  padding: 18px 32px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  border-radius: 999px;
+  gap: 14px;
+  background: linear-gradient(180deg,
+    rgba(255, 196, 138, 0.38) 0%,
+    rgba(255, 140, 80, 0.22) 50%,
+    rgba(20, 14, 10, 0.82) 100%);
+  border: 1px solid rgba(255, 196, 138, 0.7);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 14px 36px rgba(0, 0, 0, 0.55),
+    0 0 40px rgba(255, 170, 100, 0.4),
+    0 0 88px rgba(255, 170, 100, 0.18);
+  /* Slow breath so the hero reads as "alive" */
+  animation: cta-hero-breath 3.6s ease-in-out infinite;
+}
+.cta-hero:hover {
+  transform: translateY(-3px);
+  background: linear-gradient(180deg,
+    rgba(255, 210, 160, 0.50) 0%,
+    rgba(255, 150, 90, 0.32) 50%,
+    rgba(30, 18, 12, 0.88) 100%);
+  border-color: rgba(255, 210, 160, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 20px 44px rgba(0, 0, 0, 0.6),
+    0 0 56px rgba(255, 170, 100, 0.55),
+    0 0 120px rgba(255, 170, 100, 0.28);
+  animation-play-state: paused;
+}
+.cta-hero .cta-icon {
+  width: 30px;
+  height: 30px;
+  background: rgba(255, 210, 160, 0.22);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.cta-hero:hover .cta-icon { background: rgba(255, 210, 160, 0.38); }
+@keyframes cta-hero-breath {
+  0%, 100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      0 14px 36px rgba(0, 0, 0, 0.55),
+      0 0 40px rgba(255, 170, 100, 0.4),
+      0 0 88px rgba(255, 170, 100, 0.18);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.34),
+      0 16px 40px rgba(0, 0, 0, 0.6),
+      0 0 52px rgba(255, 170, 100, 0.55),
+      0 0 110px rgba(255, 170, 100, 0.26);
+  }
+}
+
+/* Secondary · subdued neutral glass · visibly "second" */
+.cta-secondary {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(10, 14, 24, 0.35);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 6px 14px rgba(0, 0, 0, 0.3);
+}
+.cta-secondary:hover {
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(14, 20, 32, 0.55);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 10px 22px rgba(0, 0, 0, 0.45);
+}
+
+/* Subtle replay link · tertiary, text-only */
+.cta-link {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+.cta-link:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.05);
+}
+.cta-link:focus-visible {
+  outline: 2px solid rgba(159, 208, 255, 0.6);
+  outline-offset: 3px;
+}
+
+/* ------------------------------------------------------------
+   Team modal · macOS-style window dialog.
+   Traffic-light controls on the left, centered title, 6 team
+   member cards in a grid. Each card has a glyph tile + name +
+   3 keyword chips. Opens on "Meet the team behind" click.
+   ------------------------------------------------------------ */
+.team-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(5, 8, 18, 0);
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  display: grid;
+  place-items: center;
+  padding: clamp(20px, 4vh, 60px);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.35s ease,
+    background 0.35s ease,
+    backdrop-filter 0.35s ease;
+}
+.team-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  background: rgba(5, 8, 18, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.team-window {
+  width: min(920px, 96vw);
+  max-height: min(720px, 88vh);
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  overflow: hidden;
+
+  /* macOS-style window · layered glass with a subtle 1px rim */
+  background:
+    linear-gradient(180deg,
+      rgba(28, 32, 46, 0.92) 0%,
+      rgba(16, 20, 32, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 30px 80px rgba(0, 0, 0, 0.65),
+    0 6px 18px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(0, 0, 0, 0.3);   /* outer rim for macOS crispness */
+
+  transform: translateY(12px) scale(0.98);
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.team-overlay.is-open .team-window {
+  transform: translateY(0) scale(1);
+}
+
+/* Title bar with traffic lights */
+.team-titlebar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  padding: 10px 14px;
+  height: 36px;
+  background: rgba(20, 24, 36, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  user-select: none;
+}
+.team-lights {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.team-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -0.5px 0 rgba(0, 0, 0, 0.25);
+  cursor: default;
+}
+.team-light.is-close {
+  background: #ff5f57;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.team-light.is-close:hover { filter: brightness(1.15); }
+.team-light.is-minimize { background: #febc2e; }
+.team-light.is-zoom     { background: #28c840; }
+
+.team-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.88);
+  text-align: center;
+  margin: 0;
+}
+/* Spacer balances the traffic lights so the title stays centered */
+.team-spacer { width: 54px; }
+
+/* Scrollable body */
+.team-body {
+  padding: clamp(16px, 2.4vh, 24px) clamp(16px, 2.4vw, 28px);
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: clamp(10px, 1.4vw, 16px);
+  align-content: start;
+}
+.team-body::-webkit-scrollbar { width: 8px; }
+.team-body::-webkit-scrollbar-track { background: transparent; }
+.team-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+/* A team member card · glass pane, tighter than narrative panes */
+.team-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.team-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.team-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.team-card-name {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1.1;
+  color: rgba(255, 255, 255, 0.96);
+  letter-spacing: -0.005em;
+}
+/* Tiny kind tag · differentiates human vs agent without a badge row */
+.team-card-kind {
+  font-family: var(--sans);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+.team-card.is-human .team-card-kind {
+  color: rgba(255, 196, 138, 0.7);
+}
+.team-card.is-agent .team-card-kind {
+  color: rgba(159, 208, 255, 0.7);
+}
+
+.team-card-role {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: -2px;
+}
+
+.team-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.team-chip {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.72);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.team-card.is-human .team-chip {
+  background: rgba(255, 196, 138, 0.08);
+  border-color: rgba(255, 196, 138, 0.2);
+  color: rgba(255, 226, 190, 0.88);
+}
+.team-card.is-agent .team-chip {
+  background: rgba(159, 208, 255, 0.06);
+  border-color: rgba(159, 208, 255, 0.16);
+  color: rgba(210, 232, 255, 0.86);
+}
+
+/* ------------------------------------------------------------
+   Welcome beat · sweep-wipe choreography
+   Text sits centered while Earth is mid-screen. As the welcome
+   window ages (t → peakOut → end), two things happen:
+     1. Earth pans hard-left (camera look-offset)
+     2. The text reveals a clip-path inset from the left that
+        grows from 0% → 100%, erasing the text left-to-right.
+   The wipe is timed so Earth's trailing limb is where the text
+   disappears — Earth literally sweeps the words away.
+   ------------------------------------------------------------ */
+.beat.welcome {
+  top: 50%;
+  transform: translate(-50%, -50%) translateY(12px);
+  /* --sweep (0..1) is driven by director.js during the welcome window */
+  clip-path: inset(0 0 0 calc(var(--sweep, 0) * 100%));
+  -webkit-clip-path: inset(0 0 0 calc(var(--sweep, 0) * 100%));
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  max-width: min(1100px, 92vw);
+}
+.beat.welcome .line {
+  font-size: clamp(28px, 3.8vw, 58px);
+  font-weight: 300;
+  line-height: 1.2;
+}
+.beat.welcome .sub {
+  margin-top: 14px;
+  font-size: clamp(11px, 1vw, 14px);
+  letter-spacing: 0.34em;
+}
+
+/* The dynamic name gets a soft accent tint + a tiny underline
+   so it reads as a salutation, not a generic word. */
+.welcome-name {
+  display: inline-block;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  color: color-mix(in oklab, var(--warm-bright) 70%, white 30%);
+  padding: 0 4px;
+  background:
+    linear-gradient(180deg, transparent 82%,
+      color-mix(in oklab, var(--warm-bright) 40%, transparent) 82%,
+      color-mix(in oklab, var(--warm-bright) 40%, transparent) 88%,
+      transparent 88%);
 }
 
 /* ------------------------------------------------------------
