@@ -2,11 +2,16 @@
   {
     "id": "crisis-support",
     "name": "Crisis Support",
+    "title": "Crisis Support",
     "accent": "#ff6b4a",
-    "tagline": "When every minute matters.",
+    "opening": "When **war** comes, it doesn't wait. Neither should the help.",
+    "pivot": "It was never a *shortage* of good people. It was a **matching** problem.",
+    "resolution": "One protocol. Helpers and the helped, paired in **minutes**. Not days.",
+    "closer": "The world is bigger than the crisis. If we can find each other, it **stays** that way.",
     "projects": [
       {
         "label": "Crisis Support Program",
+        "blurb": "Match verified helpers to people in need, in minutes not days.",
         "url": "https://sameer-goel.github.io/crisis-support-program/"
       }
     ]
@@ -14,15 +19,21 @@
   {
     "id": "mental-health",
     "name": "Mental Health",
+    "title": "Mental Health",
     "accent": "#5ab8ff",
-    "tagline": "Train the mind you already have.",
+    "opening": "We treat the mind like a lawyer. We call it only when something has already **broken**.",
+    "pivot": "The mind is a *muscle.* Untrained muscles **atrophy**.",
+    "resolution": "A gym for the mind. Two minutes a day. Focus. Memory. The reps are **small**. The compounding is enormous.",
+    "closer": "You already *have* a brain. We just help you **use it**.",
     "projects": [
       {
         "label": "Brain Gym",
+        "blurb": "Two-minute focus workouts, delivered as daily reps.",
         "url": "http://solutions-portfolio.sameerai.com/mind/brain-gym/"
       },
       {
         "label": "Total Recall",
+        "blurb": "Rebuild your memory one card, one session, one day at a time.",
         "url": "http://solutions-portfolio.sameerai.com/mind/total-recall/"
       }
     ]
@@ -30,19 +41,26 @@
   {
     "id": "special-sounds",
     "name": "Special Sounds",
+    "title": "Special Sounds",
     "accent": "#b78bff",
-    "tagline": "Frequencies that re-tune you.",
+    "opening": "We're over-caffeinated. Under-**tuned**.",
+    "pivot": "Before pills, there were **frequencies**. The body still remembers.",
+    "resolution": "Binaural beats for focus. Solfeggio for calm. A generator for your *own* recipe.",
+    "closer": "Sound is the **oldest** medicine. Now it's a click away.",
     "projects": [
       {
         "label": "Binaural Beats",
+        "blurb": "Pre-mixed binaural frequencies for focus, calm, and deep sleep.",
         "url": "http://solutions-portfolio.sameerai.com/mind/binaural-beats/"
       },
       {
-        "label": "Binaural Beats Generator",
+        "label": "Binaural Generator",
+        "blurb": "Design your own binaural recipe. Pick the tones, set the intent.",
         "url": "http://solutions-portfolio.sameerai.com/mind/binaural-beats-generator/"
       },
       {
         "label": "Solfeggio Frequency",
+        "blurb": "Ancient sacred tones for modern nervous systems.",
         "url": "http://solutions-portfolio.sameerai.com/mind/solfeggio-frequency/"
       }
     ]
@@ -50,19 +68,26 @@
   {
     "id": "autonomous-ai",
     "name": "Autonomous AI",
+    "title": "Autonomous AI",
     "accent": "#5ae0d0",
-    "tagline": "Agents that do, not just answer.",
+    "opening": "AI that *talks* is everywhere. AI that **does** is still rare.",
+    "pivot": "Intelligence without hands is a philosopher. Hands without intelligence is a worker. We are building **both**.",
+    "resolution": "Agents that ship code. Agents that plan careers. Agents that *finish* the job you started.",
+    "closer": "The chasm between 'can answer' and 'will act' is the **only** chasm that matters now.",
     "projects": [
       {
         "label": "SaaaS",
+        "blurb": "Software as an Agentic Service. Ships working code, not suggestions.",
         "url": "http://solutions-portfolio.sameerai.com/Autonomous-AI/saaas/"
       },
       {
-        "label": "Deck",
+        "label": "Agentic AI Deck",
+        "blurb": "The thesis, the landscape, the architecture. One deck.",
         "url": "https://www.canva.com/design/DAFf1YZAEas/"
       },
       {
         "label": "AI Career Explorer",
+        "blurb": "An agent that maps your next career move from your skills.",
         "url": "http://solutions-portfolio.sameerai.com/Learn-AI/ai-career-explorer/"
       }
     ]
@@ -70,11 +95,16 @@
   {
     "id": "sovereign-ai",
     "name": "Sovereign AI",
+    "title": "Sovereign AI",
     "accent": "#ffc54a",
-    "tagline": "Own your intelligence stack.",
+    "opening": "Your **prompts** are your thoughts. They shouldn't live on someone else's server.",
+    "pivot": "The stack used to fit in a datacenter. Now it fits on a **laptop**.",
+    "resolution": "A blueprint. Local models. Local memory. Local *agency*. You own the brain you built.",
+    "closer": "The future has a **choice** in it. Sovereign or subscribed.",
     "projects": [
       {
-        "label": "Build a Completely Sovereign AI System",
+        "label": "Sovereign AI Blueprint",
+        "blurb": "A step-by-step guide to owning your entire AI stack on your own hardware.",
         "url": "https://sameer-goel.github.io/Build-Completely-Sovereign-AI-System/"
       }
     ]
@@ -82,15 +112,21 @@
   {
     "id": "cultivate-inner-intelligence",
     "name": "Cultivate Inner Intelligence",
+    "title": "Cultivate Inner Intelligence",
     "accent": "#ff9b7a",
-    "tagline": "A book. A mirror.",
+    "opening": "We scaled the *outer* intelligence. We forgot the **inner** one.",
+    "pivot": "Consciousness is the last **unclaimed** frontier. You can map it. You just have to **look**.",
+    "resolution": "A book, to map the terrain. A simulation, to rehearse *letting go*. Two doors to your own mind.",
+    "closer": "The most interesting thing you will ever build is **yourself**.",
     "projects": [
       {
         "label": "Book Reader",
+        "blurb": "A book about the inner operating system, read directly in the browser.",
         "url": "https://updatemind.space/bookreader.html"
       },
       {
         "label": "Ego Death Simulation",
+        "blurb": "A guided simulation to rehearse letting go of the self.",
         "url": "http://solutions-portfolio.sameerai.com/soul/ego-death-simulation/"
       }
     ]
@@ -98,15 +134,21 @@
   {
     "id": "self-help",
     "name": "Self Help",
+    "title": "Self Help",
     "accent": "#6bd6a0",
-    "tagline": "Small tools, daily wins.",
+    "opening": "The shelf is full of *advice*. What's missing is the **tool**.",
+    "pivot": "**Rituals** beat resolutions. The body learns what it repeats.",
+    "resolution": "Two tools. Three minutes each. Update your mind. *Reflect* on your day. Do it again tomorrow.",
+    "closer": "The smallest practices, kept the **longest**, change the most.",
     "projects": [
       {
         "label": "Update Mind",
+        "blurb": "Refresh your mental model every morning with a three-minute ritual.",
         "url": "https://updatemind.space/"
       },
       {
         "label": "My Reflection",
+        "blurb": "A daily mirror for your thoughts. Write, read back, notice.",
         "url": "https://myreflection.space/"
       }
     ]
