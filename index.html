@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Act I · Director's Cut — The Meaningful World</title>
 
-  <link rel="stylesheet" href="styles.css?v=20260506-1020">
+  <link rel="stylesheet" href="styles.css?build=v08-e">
 
   <script type="importmap">
   {
@@ -18,8 +18,22 @@
 </head>
 <body data-build="20260506-1020">
 
-  <!-- Build stamp so cache staleness is obvious at a glance -->
-  <div id="build-stamp" aria-hidden="true">director's cut · build 20260506-1020</div>
+  <!-- Version badge · shows which iteration of the app you're viewing.
+       Bumped on meaningful layout/feature changes, not on every commit. -->
+  <div id="version" aria-hidden="true">earth.v0.8</div>
+
+  <!-- Scroll-progress HUD · vertical bar + percentage on the right edge.
+       Dev/guidance tool so we can reference "at 67%, do X". -->
+  <div id="scroll-hud" aria-hidden="true">
+    <div class="hud-track">
+      <div class="hud-fill" id="hud-fill"></div>
+      <div class="hud-marks" id="hud-marks"></div>
+    </div>
+    <div class="hud-readout">
+      <div class="hud-pct" id="hud-pct">0%</div>
+      <div class="hud-phase" id="hud-phase">INTRO</div>
+    </div>
+  </div>
 
   <!-- ========================================================
        z=0 · Globe (masked by a scroll-driven porthole)
@@ -61,16 +75,25 @@
 
   </div>
 
+  <!-- Top pill bar · independent navigation. Visible post-login, always.
+       Lets the user jump between categories at any point in the scroll
+       journey. Stays out of the letterbox fade so it's not timed away. -->
+  <nav class="lb-topbar" id="lb-topbar" aria-label="Solutions"></nav>
+
   <!-- ========================================================
-       z=4 · Letterbox · split-letter menu. Full 7 roster on the
-       left (active promoted to cinematic serif). Right side is
-       the active category's glyph + tagline + project links.
-       Scroll is the only navigation — one viewport per category.
+       z=4 · Letterbox · menu. Earth docks left, story on right.
+       Scroll drives active category; pill bar (above) lets the
+       user click to jump.
        ======================================================== -->
   <section id="letterbox" aria-hidden="true" aria-label="Solutions portfolio">
+
+    <!-- Top-left label sitting over Earth · number + category name -->
+    <div class="lb-title" id="lb-title" aria-live="polite"></div>
+
+    <!-- Right-side story column · Problem / Analysis / Solution + apps -->
     <div class="lb-inner">
-      <ol class="lb-roster" id="lb-roster"></ol>
-      <aside class="lb-stack" id="lb-stack"></aside>
+      <div class="lb-story" id="lb-story"></div>
+      <div class="lb-apps" id="lb-apps"></div>
     </div>
   </section>
 
@@ -80,8 +103,7 @@
        ======================================================== -->
   <div id="narration" aria-live="polite">
     <div class="beat" data-beat="0">
-      <div class="eyebrow">Act I</div>
-      <div class="line">Two intelligences, <em>one mission.</em></div>
+      <div class="line">Two Intelligence for <em class="mission">One Mission.</em></div>
     </div>
     <div class="beat" data-beat="1" data-side="inner">
       <div class="eyebrow">Inner intelligence</div>
@@ -99,6 +121,88 @@
     <div class="beat climax" data-beat="5">
       <div class="line">A <em class="earth">Meaningful World</em> of Tomorrow.</div>
     </div>
+
+    <!-- Welcome beat · Earth is center while this reads, then Earth
+         sweeps left and literally erases the line as it goes.        -->
+    <div class="beat welcome" data-beat="welcome">
+      <div class="line">
+        Welcome <span class="welcome-name" id="welcome-name">Friend</span>,
+        to the <em>Immersive Solutions Portfolio</em>
+      </div>
+      <div class="sub">by Samurai Agency</div>
+    </div>
+
+    <!-- Closer narration beat removed · the "Thank you / collaborate"
+         copy now lives inside #finale-cta below so it stays with the
+         buttons as a single unit. -->
+  </div>
+  </div>
+
+  <!-- ========================================================
+       z=7 · End-of-scroll CTA state. The CTAs are the hero
+       of the final frame — no intro copy competing, no
+       secondary actions crowding. The primary button is the
+       loudest thing on screen. The replay is a tertiary link.
+       ======================================================== -->
+  <div id="finale-cta" aria-hidden="true">
+    <!-- Thank you · personalized closer that lives WITH the CTAs so it
+         stays on-screen together as one finale unit. Name updated from
+         the same paint() function that updates the welcome beat. -->
+    <div class="finale-thanks">
+      <div class="finale-thanks-1">Thank you, <span class="closer-name" id="closer-name">Friend</span>.</div>
+      <div class="finale-thanks-2">
+        I believe we can find a great opportunity to
+        <em class="closer-foil">collaborate.</em>
+      </div>
+    </div>
+    <div class="finale-actions">
+      <button type="button" class="cta cta-primary cta-hero" id="cta-email">
+        <span class="cta-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+            <path d="M4 8l8 5 8-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="3" y="6" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+        </span>
+        <span class="cta-label">Drop Sameer a message</span>
+      </button>
+      <button type="button" class="cta cta-secondary" id="cta-team">
+        <span class="cta-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+            <circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="16" cy="10" r="2.5" stroke="currentColor" stroke-width="1.6" opacity="0.7"/>
+            <path d="M3.5 19c.6-3 3-5 5.5-5s4.9 2 5.5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M15.5 18c.4-2 2-3.5 4-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/>
+          </svg>
+        </span>
+        <span class="cta-label">Meet the team behind</span>
+      </button>
+    </div>
+    <div class="finale-replay">
+      <button type="button" class="cta-link" id="cta-replay">↻ Replay experience</button>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       z=9 · Team modal. macOS-style window dialog. Opens when
+       the user clicks "Meet the team behind". Contains 6 cards,
+       each with the member's name + 3 keyword chips. Click the
+       red traffic-light dot, press Esc, or click outside to close.
+       ======================================================== -->
+  <div id="team-overlay" class="team-overlay" aria-hidden="true">
+    <div class="team-window" role="dialog" aria-modal="true"
+         aria-labelledby="team-title">
+      <header class="team-titlebar">
+        <div class="team-lights" aria-hidden="true">
+          <button class="team-light is-close"    id="team-close-light"
+                  type="button" aria-label="Close"></button>
+          <span class="team-light is-minimize"></span>
+          <span class="team-light is-zoom"></span>
+        </div>
+        <h2 class="team-title" id="team-title">The team behind SameerAI</h2>
+        <div class="team-spacer" aria-hidden="true"></div>
+      </header>
+      <div class="team-body" id="team-body"></div>
+    </div>
   </div>
 
   <!-- Subtle scroll cue, bottom center. Fades after first scroll. -->
@@ -112,9 +216,20 @@
   <!-- Spacer — 600vh so we get room for all 7 beats to breathe -->
   <div id="scroll-spacer" aria-hidden="true"></div>
 
+  <!-- ─── macOS Tahoe login · runs first. Shows the lock screen with
+       memoji, asks for the visitor's name, stores it to sessionStorage
+       so the Welcome beat downstream can greet them by name. Supports
+       ?for=Name URL param to pre-fill. Auto-dismisses on submit. ─── -->
+  <script src="macOSTahoeLogin.js?build=v08-c"></script>
+
+  <!-- ─── macOS Tahoe header · self-guards until the login is dismissed.
+       Kept out of the scroll experience so it doesn't compete with the
+       narrative. Will fully activate in the "Team Behind" phase later. ─── -->
+  <script src="macOSTahoeHeader.js?v=20260506-1430"></script>
+
   <!-- Earth engine (reused from the canonical tree) -->
   <script type="module" src="./earth-scene.js"></script>
-  <script src="director.js?v=20260506-1020"></script>
+  <script src="director.js?build=v08-e"></script>
 
 </body>
 </html>
