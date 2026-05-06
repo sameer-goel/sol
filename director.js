@@ -81,10 +81,11 @@ const HUD = (() => {
   const marksEl= document.getElementById('hud-marks');
   if (!fill) return { update: () => {} };
 
-  // Tick-mark positions (percent of full scroll)
-  const TICKS = [13, 30, 46, 55, 61, 62];  // intro→why→how→meet→climax→menu
+  // Tick-mark positions (percent of full scroll, placed on the
+  // horizontal bar via `left:` property).
+  const TICKS = [13, 30, 46, 55, 61, 72, 94, 97];
   marksEl.innerHTML = TICKS
-    .map(p => `<span style="top:${p}%"></span>`).join('');
+    .map(p => `<span style="left:${p}%"></span>`).join('');
 
   // Phase boundaries matched to the NARRATION_BEATS + MENU_FULL
   const PHASES = [
@@ -1333,37 +1334,50 @@ window.TeamModal = TeamModal;
 
 
 // ─── Autoplay · hands-free scroll through the whole journey ──────────
-// Users can click the "Autoplay" button in the scroll-cue to sit back
-// and watch. We scroll the window at a calm pace (roughly 60 seconds
-// from top to bottom), pausing naturally at key narrative beats so the
-// user has time to read. Any manual scroll, wheel, or touch cancels.
+// Variable pacing: the narrative prologue reads fast, the category menu
+// reads slowly (lots to read per category), the finale reads moderate.
+// Click pauses; manual wheel/touch/arrow/Space/Esc cancels.
 
 const Autoplay = (() => {
   const btn     = document.getElementById('hero-autoplay');
   const iconPlay  = btn?.querySelector('.icon-play');
   const iconPause = btn?.querySelector('.icon-pause');
   const label   = btn?.querySelector('.hero-btn-label');
-  if (!btn) return { toggle: () => {}, stop: () => {} };
+  if (!btn) return { toggle: () => {}, stop: () => {}, start: () => {} };
+
+  // Pace phases with per-category dwell on the apps moment:
+  //
+  // PROLOGUE    0.00 → 0.68    12s   · narrative beats, one line each
+  // MENU        0.68 → 0.94    covered category-by-category (see below)
+  // FINALE      0.94 → 1.00     6s   · closer + CTA settle
+  //
+  // The MENU band is split into 7 category sub-bands. Each category:
+  //   · Read phase    (first ~80% of the band, 5s) — Problem/Analysis/Solution
+  //   · Apps DWELL    (last ~20% of the band, 3s full stop at apps reveal)
+  //
+  // Total with dwells ≈ 75s. User can still pause anytime.
+  const PACE = [
+    { from: 0.00, to: 0.68, ms: 12000 },
+    // Menu is handled specially (variable per sub-band)
+    { from: 0.94, to: 1.00, ms:  6000 },
+  ];
+
+  const MENU_FROM = 0.68;
+  const MENU_TO   = 0.94;
+  const CATEGORY_COUNT = 7;
+  const CATEGORY_SPAN  = (MENU_TO - MENU_FROM) / CATEGORY_COUNT;
+  // How much of each category band is "read" vs "apps" vs "dwell":
+  //   0  → 0.55  read (prose panes revealing)
+  //   0.55→ 0.80  transition (apps pane lands)
+  //   0.80→ 1.00  dwell (near full stop so user sees the apps)
+  const READ_MS   = 5000;  // read the prose
+  const TRANS_MS  = 1500;  // apps card animation settles
+  const DWELL_MS  = 2500;  // deliberate pause on apps
+  const CAT_MS    = READ_MS + TRANS_MS + DWELL_MS;   // ~9s per category
 
   let playing = false;
   let rafId = null;
   let lastTs = 0;
-
-  // Total playback time from 0% to 100% at natural reading pace.
-  // 60 seconds feels like a slow, considered read; 45 feels brisk.
-  const TOTAL_MS = 60000;
-
-  // "Breath pauses" at key beats so the copy has time to land. Each
-  // entry is [t, extraMsToDwell]. Pauses are additive, not absolute.
-  const BREATH_AT = [
-    [0.08, 1600],   // hero title
-    [0.30, 1200],   // WHY landing
-    [0.46, 1200],   // HOW landing
-    [0.58, 1800],   // CLIMAX — longest pause
-    [0.66, 1400],   // welcome
-    [0.75, 1000],   // first category
-    [0.98, 2000],   // CTA appears — let the user see it
-  ];
 
   function setIcon(isPlaying) {
     if (!iconPlay || !iconPause) return;
@@ -1376,79 +1390,93 @@ const Autoplay = (() => {
   }
 
   function stop() {
+    if (!playing) return;
     playing = false;
     if (rafId) cancelAnimationFrame(rafId);
     rafId = null;
+    lastTs = 0;
     setIcon(false);
   }
 
   function start() {
     if (playing) return;
+    const max = document.body.scrollHeight - window.innerHeight;
+    if (max <= 0) return;
+    if (window.scrollY >= max - 4) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
     playing = true;
     setIcon(true);
     lastTs = 0;
-
-    const maxScroll = () => document.body.scrollHeight - window.innerHeight;
-
-    function tick(ts) {
-      if (!playing) return;
-      if (!lastTs) lastTs = ts;
-      const dt = ts - lastTs;
-      lastTs = ts;
-
-      const max = maxScroll();
-      const curY = window.scrollY;
-      const curT = max > 0 ? curY / max : 0;
-
-      // Check for a breath pause · if we're within a small window of
-      // a breath point, slow to a near-stop for the dwell duration.
-      let dwellFactor = 1;
-      for (const [bt, bMs] of BREATH_AT) {
-        const dist = Math.abs(curT - bt);
-        if (dist < 0.012) {
-          // Near the breath point · slow down proportional to closeness
-          const closeness = 1 - (dist / 0.012);
-          dwellFactor = 1 - closeness * 0.85;  // 1.0 at edges, 0.15 at center
-          break;
-        }
-      }
-
-      // Scroll rate · pixels per second to cover full height in TOTAL_MS
-      const baseRate = max / (TOTAL_MS / 1000);
-      const delta = baseRate * (dt / 1000) * dwellFactor;
-      const nextY = Math.min(max, curY + delta);
-
-      window.scrollTo(0, nextY);
-
-      if (nextY >= max - 1) {
-        // Reached the end. Stop cleanly.
-        stop();
-        return;
-      }
-      rafId = requestAnimationFrame(tick);
-    }
     rafId = requestAnimationFrame(tick);
   }
 
-  function toggle() {
-    if (playing) stop(); else start();
+  // Returns px/second for the current scroll position.
+  // Inside the MENU band, use per-sub-band pacing with a dwell tail.
+  function rateAt(t, max) {
+    // Prologue + finale · flat pacing
+    for (const p of PACE) {
+      if (t >= p.from && t < p.to) {
+        const spanPx = (p.to - p.from) * max;
+        return spanPx / (p.ms / 1000);
+      }
+    }
+    // Inside MENU · figure out which category we're in and where within
+    if (t >= MENU_FROM && t < MENU_TO) {
+      const offset = t - MENU_FROM;
+      const catIdx = Math.floor(offset / CATEGORY_SPAN);
+      const subT   = (offset - catIdx * CATEGORY_SPAN) / CATEGORY_SPAN; // 0→1
+      // Divide the sub-band into three zones with different speeds
+      const spanPx = CATEGORY_SPAN * max;
+      if (subT < 0.55) {
+        // Read zone: covers 55% of band over READ_MS
+        return (spanPx * 0.55) / (READ_MS / 1000);
+      } else if (subT < 0.80) {
+        // Transition zone: 25% of band over TRANS_MS
+        return (spanPx * 0.25) / (TRANS_MS / 1000);
+      } else {
+        // Dwell zone: 20% of band over DWELL_MS (very slow)
+        return (spanPx * 0.20) / (DWELL_MS / 1000);
+      }
+    }
+    return max / 60;
   }
 
+  function tick(ts) {
+    if (!playing) return;
+    if (!lastTs) lastTs = ts;
+    const dt = Math.min(50, ts - lastTs);   // clamp dt to avoid big jumps
+    lastTs = ts;
+
+    const max = document.body.scrollHeight - window.innerHeight;
+    if (max <= 0) { stop(); return; }
+
+    const curY = window.scrollY;
+    const curT = curY / max;
+    const rate = rateAt(curT, max);        // px/second for this phase
+    const delta = rate * (dt / 1000);      // px this frame
+    const nextY = curY + delta;
+
+    if (nextY >= max) {
+      window.scrollTo(0, max);
+      stop();
+      return;
+    }
+    window.scrollTo(0, nextY);
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function toggle() { if (playing) stop(); else start(); }
   btn.addEventListener('click', toggle);
 
-  // User interaction cancels autoplay. We listen for scroll events
-  // that aren't driven by our own scrollTo. Simple heuristic: if the
-  // user touches wheel / keys / touchmove while playing, stop.
-  ['wheel', 'touchmove', 'keydown'].forEach((evt) => {
-    window.addEventListener(evt, (ev) => {
-      if (!playing) return;
-      // Ignore the arrow keys if the user explicitly wants to step
-      if (evt === 'keydown' &&
-          !['ArrowDown','ArrowUp','PageDown','PageUp','Space',' '].includes(ev.key)) {
-        return;
-      }
-      stop();
-    }, { passive: true });
+  // User interaction cancels autoplay.
+  ['wheel', 'touchmove'].forEach((evt) => {
+    window.addEventListener(evt, () => { if (playing) stop(); }, { passive: true });
+  });
+  window.addEventListener('keydown', (ev) => {
+    if (!playing) return;
+    const stopKeys = ['ArrowDown','ArrowUp','PageDown','PageUp',' ','Spacebar','Escape','Home','End'];
+    if (stopKeys.includes(ev.key)) stop();
   });
 
   return { start, stop, toggle };
