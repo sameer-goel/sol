@@ -1,0 +1,114 @@
+[
+  {
+    "id": "crisis-support",
+    "name": "Crisis Support",
+    "accent": "#ff6b4a",
+    "tagline": "When every minute matters.",
+    "projects": [
+      {
+        "label": "Crisis Support Program",
+        "url": "https://sameer-goel.github.io/crisis-support-program/"
+      }
+    ]
+  },
+  {
+    "id": "mental-health",
+    "name": "Mental Health",
+    "accent": "#5ab8ff",
+    "tagline": "Train the mind you already have.",
+    "projects": [
+      {
+        "label": "Brain Gym",
+        "url": "http://solutions-portfolio.sameerai.com/mind/brain-gym/"
+      },
+      {
+        "label": "Total Recall",
+        "url": "http://solutions-portfolio.sameerai.com/mind/total-recall/"
+      }
+    ]
+  },
+  {
+    "id": "special-sounds",
+    "name": "Special Sounds",
+    "accent": "#b78bff",
+    "tagline": "Frequencies that re-tune you.",
+    "projects": [
+      {
+        "label": "Binaural Beats",
+        "url": "http://solutions-portfolio.sameerai.com/mind/binaural-beats/"
+      },
+      {
+        "label": "Binaural Beats Generator",
+        "url": "http://solutions-portfolio.sameerai.com/mind/binaural-beats-generator/"
+      },
+      {
+        "label": "Solfeggio Frequency",
+        "url": "http://solutions-portfolio.sameerai.com/mind/solfeggio-frequency/"
+      }
+    ]
+  },
+  {
+    "id": "autonomous-ai",
+    "name": "Autonomous AI",
+    "accent": "#5ae0d0",
+    "tagline": "Agents that do, not just answer.",
+    "projects": [
+      {
+        "label": "SaaaS",
+        "url": "http://solutions-portfolio.sameerai.com/Autonomous-AI/saaas/"
+      },
+      {
+        "label": "Deck",
+        "url": "https://www.canva.com/design/DAFf1YZAEas/"
+      },
+      {
+        "label": "AI Career Explorer",
+        "url": "http://solutions-portfolio.sameerai.com/Learn-AI/ai-career-explorer/"
+      }
+    ]
+  },
+  {
+    "id": "sovereign-ai",
+    "name": "Sovereign AI",
+    "accent": "#ffc54a",
+    "tagline": "Own your intelligence stack.",
+    "projects": [
+      {
+        "label": "Build a Completely Sovereign AI System",
+        "url": "https://sameer-goel.github.io/Build-Completely-Sovereign-AI-System/"
+      }
+    ]
+  },
+  {
+    "id": "cultivate-inner-intelligence",
+    "name": "Cultivate Inner Intelligence",
+    "accent": "#ff9b7a",
+    "tagline": "A book. A mirror.",
+    "projects": [
+      {
+        "label": "Book Reader",
+        "url": "https://updatemind.space/bookreader.html"
+      },
+      {
+        "label": "Ego Death Simulation",
+        "url": "http://solutions-portfolio.sameerai.com/soul/ego-death-simulation/"
+      }
+    ]
+  },
+  {
+    "id": "self-help",
+    "name": "Self Help",
+    "accent": "#6bd6a0",
+    "tagline": "Small tools, daily wins.",
+    "projects": [
+      {
+        "label": "Update Mind",
+        "url": "https://updatemind.space/"
+      },
+      {
+        "label": "My Reflection",
+        "url": "https://myreflection.space/"
+      }
+    ]
+  }
+]
