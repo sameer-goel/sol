@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sameer Goel · Solutions Portfolio</title>
+
+  <!-- Favicon · Duochrome Atom · matches the header logo -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="favicon.svg">
+
+  <link rel="stylesheet" href="styles.css?build=v11-a">
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three":         "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body data-build="20260506-1020">
+
+  <!-- Version badge · shows which iteration of the app you're viewing.
+       Bumped on meaningful layout/feature changes, not on every commit. -->
+  <div id="version" aria-hidden="true">earth.v0.9</div>
+
+  <!-- Scroll-progress HUD · vertical bar + percentage on the right edge.
+       Dev/guidance tool so we can reference "at 67%, do X". -->
+  <div id="scroll-hud" aria-hidden="true">
+    <div class="hud-track">
+      <div class="hud-fill" id="hud-fill"></div>
+      <div class="hud-marks" id="hud-marks"></div>
+    </div>
+    <div class="hud-readout">
+      <div class="hud-pct" id="hud-pct">0%</div>
+      <div class="hud-phase" id="hud-phase">INTRO</div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       z=0 · Globe (masked by a scroll-driven porthole)
+       ======================================================== -->
+  <div id="scene-root"></div>
+
+  <!-- ========================================================
+       z=1 · Starfield + bloom effects
+       ======================================================== -->
+  <canvas id="stars-canvas" aria-hidden="true"></canvas>
+  <div id="bloom-layer" aria-hidden="true">
+    <div class="bloom warm"></div>
+    <div class="bloom cool"></div>
+    <div class="bloom fused"></div>
+  </div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <!-- Bluish atmosphere halo · tight rim when Earth arrives (elevation-only). -->
+  <div id="atmosphere" aria-hidden="true"></div>
+
+  <!-- ========================================================
+       z=2 · The two intelligences. Canvas-driven, scroll-timed.
+       ======================================================== -->
+  <div id="stage">
+
+    <!-- Inner intelligence · warm · "why" · grows dendritically -->
+    <div class="intel inner-intel">
+      <canvas class="intel-canvas" id="inner-canvas"></canvas>
+      <div class="intel-ring" aria-hidden="true"></div>
+    </div>
+
+    <!-- Artificial intelligence · cool · "how" · propagates layer-by-layer -->
+    <div class="intel artificial-intel">
+      <canvas class="intel-canvas" id="artificial-canvas"></canvas>
+      <div class="intel-ring" aria-hidden="true"></div>
+    </div>
+
+    <!-- No in-stage card · the letterbox section below takes over during menu -->
+
+  </div>
+
+  <!-- Top pill bar · independent navigation. Visible post-login, always.
+       Lets the user jump between categories at any point in the scroll
+       journey. Stays out of the letterbox fade so it's not timed away. -->
+  <nav class="lb-topbar" id="lb-topbar" aria-label="Solutions"></nav>
+
+  <!-- ========================================================
+       z=4 · Letterbox · menu. Earth docks left, story on right.
+       Scroll drives active category; pill bar (above) lets the
+       user click to jump.
+       ======================================================== -->
+  <section id="letterbox" aria-hidden="true" aria-label="Solutions portfolio">
+
+    <!-- Top-left label sitting over Earth · number + category name -->
+    <div class="lb-title" id="lb-title" aria-live="polite"></div>
+
+    <!-- Right-side story column · Problem / Analysis / Solution + apps -->
+    <div class="lb-inner">
+      <div class="lb-story" id="lb-story"></div>
+      <div class="lb-apps" id="lb-apps"></div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       z=3 · Narration layer. Full-viewport editorial type.
+       One beat visible at a time. Climax beat is centered & large.
+       ======================================================== -->
+  <div id="narration" aria-live="polite">
+    <div class="beat hero" data-beat="0">
+      <div class="line">Two Intelligence for <em class="mission">One Mission.</em></div>
+      <div class="hero-actions">
+        <button type="button" class="hero-btn is-primary" id="hero-autoplay">
+          <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true">
+            <path class="icon-play" d="M3 2 L11 7 L3 12 Z" fill="currentColor"/>
+            <g class="icon-pause" style="display:none">
+              <rect x="3" y="2" width="3" height="10" fill="currentColor"/>
+              <rect x="8" y="2" width="3" height="10" fill="currentColor"/>
+            </g>
+          </svg>
+          <span class="hero-btn-label">Autoplay the story</span>
+        </button>
+        <button type="button" class="hero-btn" id="hero-scroll">
+          <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true">
+            <path d="M7 2 V11 M3 7 L7 11 L11 7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="hero-btn-label">Scroll to begin</span>
+        </button>
+        <button type="button" class="hero-btn" id="hero-jump">
+          <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true">
+            <path d="M2 7 H11 M7 3 L11 7 L7 11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="hero-btn-label">Jump to solutions</span>
+        </button>
+      </div>
+    </div>
+    <div class="beat" data-beat="1" data-side="inner">
+      <div class="eyebrow">Inner intelligence</div>
+      <div class="line">knows <em class="why">why.</em></div>
+      <div class="sub">Meaning · Feeling · Purpose</div>
+    </div>
+    <div class="beat" data-beat="2" data-side="ai">
+      <div class="eyebrow">Artificial intelligence</div>
+      <div class="line">knows <em class="how">how.</em></div>
+      <div class="sub">Tools · Systems · Application</div>
+    </div>
+    <div class="beat" data-beat="4" data-side="both">
+      <div class="line">When they meet&hellip;</div>
+    </div>
+    <div class="beat climax" data-beat="5">
+      <div class="line">A <em class="earth">Meaningful World</em> of Tomorrow.</div>
+    </div>
+
+    <!-- Welcome beat · Earth is center while this reads, then Earth
+         sweeps left and literally erases the line as it goes.        -->
+    <div class="beat welcome" data-beat="welcome">
+      <div class="line">
+        Welcome <span class="welcome-name" id="welcome-name">Friend</span>,
+        to the <em>Immersive Solutions Portfolio</em>
+      </div>
+      <div class="sub">by Samurai Agency</div>
+    </div>
+
+    <!-- Closer narration beat removed · the "Thank you / collaborate"
+         copy now lives inside #finale-cta below so it stays with the
+         buttons as a single unit. -->
+  </div>
+  </div>
+
+  <!-- ========================================================
+       z=7 · End-of-scroll CTA state. The CTAs are the hero
+       of the final frame — no intro copy competing, no
+       secondary actions crowding. The primary button is the
+       loudest thing on screen. The replay is a tertiary link.
+       ======================================================== -->
+  <div id="finale-cta" aria-hidden="true">
+    <!-- Thank you · personalized closer that lives WITH the CTAs so it
+         stays on-screen together as one finale unit. Name updated from
+         the same paint() function that updates the welcome beat. -->
+    <div class="finale-thanks">
+      <div class="finale-thanks-1">Thank you, <span class="closer-name" id="closer-name">Friend</span>.</div>
+      <div class="finale-thanks-2">
+        I believe we can find a great opportunity to
+        <em class="closer-foil">collaborate.</em>
+      </div>
+    </div>
+    <div class="finale-actions">
+      <!-- Primary CTA · opens the user's mail client. If they don't
+           have one configured, the email subtext below gives them the
+           address they can copy-paste. -->
+      <a class="cta cta-primary cta-hero" id="cta-email"
+         href="mailto:sameer.goel@outlook.com?subject=Opportunity&body=Hi%20Sameer%2C%0A%0AI%20came%20across%20your%20Immersive%20Solutions%20Portfolio%20and%20wanted%20to%20reach%20out.%0A%0A">
+        <span class="cta-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+            <path d="M4 8l8 5 8-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="3" y="6" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+        </span>
+        <span class="cta-label">Drop Sameer a message</span>
+      </a>
+      <!-- Email address as subtext so users can copy it even when no
+           mail client is configured. -->
+      <div class="cta-subtext">
+        <span>or copy</span>
+        <button type="button" class="cta-email-copy" id="cta-email-copy"
+                data-email="sameer.goel@outlook.com"
+                aria-label="Copy Sameer's email address">
+          sameer.goel@outlook.com
+        </button>
+      </div>
+      <button type="button" class="cta cta-secondary" id="cta-team">
+        <span class="cta-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+            <circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="16" cy="10" r="2.5" stroke="currentColor" stroke-width="1.6" opacity="0.7"/>
+            <path d="M3.5 19c.6-3 3-5 5.5-5s4.9 2 5.5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M15.5 18c.4-2 2-3.5 4-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/>
+          </svg>
+        </span>
+        <span class="cta-label">Meet the team behind</span>
+      </button>
+    </div>
+    <div class="finale-replay">
+      <button type="button" class="cta-link" id="cta-replay">↻ Replay experience</button>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       z=9 · Team modal. macOS-style window dialog. Opens when
+       the user clicks "Meet the team behind". Contains 6 cards,
+       each with the member's name + 3 keyword chips. Click the
+       red traffic-light dot, press Esc, or click outside to close.
+       ======================================================== -->
+  <div id="team-overlay" class="team-overlay" aria-hidden="true">
+    <div class="team-window" role="dialog" aria-modal="true"
+         aria-labelledby="team-title">
+      <header class="team-titlebar">
+        <div class="team-lights" aria-hidden="true">
+          <button class="team-light is-close"    id="team-close-light"
+                  type="button" aria-label="Close"></button>
+          <span class="team-light is-minimize"></span>
+          <span class="team-light is-zoom"></span>
+        </div>
+        <h2 class="team-title" id="team-title">The team behind SameerAI</h2>
+        <div class="team-spacer" aria-hidden="true"></div>
+      </header>
+      <div class="team-body" id="team-body"></div>
+    </div>
+  </div>
+
+  <!-- Scroll cue · subtle text + chevron at bottom center. Fades after
+       first scroll. Autoplay lives inside the hero above so the user
+       always has a clear path from the landing screen. -->
+  <div id="scroll-cue" aria-hidden="true">
+    <span class="cue-text">scroll to reveal</span>
+    <svg viewBox="0 0 12 16" width="12" height="16">
+      <path d="M6 1 V15 M1 10 L6 15 L11 10" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <!-- Spacer — 600vh so we get room for all 7 beats to breathe -->
+  <div id="scroll-spacer" aria-hidden="true"></div>
+
+  <!-- ========================================================
+       z=7 · Hub controls · engage once the user scrolls up to the
+       welcome beat. Scroll is locked from here forward; everything
+       past welcome is button-driven to end the "too much scrolling"
+       feedback. Three stages gated by html[data-hub-stage]:
+         · welcome  — "Explore solutions" + hint
+         · category — Prev / Next arrows, finish, back-to-welcome
+         · finale   — only "Explore more" (back to categories)
+       ======================================================== -->
+  <div id="hub-controls" aria-hidden="true">
+
+    <!-- Welcome-stage actions · primary CTA + hint toward pills -->
+    <div class="hub-welcome" data-hub-role="welcome">
+      <button type="button" class="hub-btn is-primary" id="hub-begin"
+              aria-label="Explore solutions">
+        <span class="hub-btn-label">Explore solutions</span>
+        <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true">
+          <path d="M2 7 H11 M7 3 L11 7 L7 11" stroke="currentColor"
+                stroke-width="1.6" fill="none"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="hub-hint">or tap any category below</div>
+    </div>
+
+    <!-- Category-stage actions · prev / next big arrows on the sides,
+         finish top-right, back-to-welcome bottom-left. -->
+    <button type="button" class="hub-arrow is-prev" id="hub-prev"
+            aria-label="Previous solution">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M15 4 L7 12 L15 20" stroke="currentColor"
+              stroke-width="1.8" fill="none"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="hub-arrow-label">Prev</span>
+    </button>
+    <button type="button" class="hub-arrow is-next" id="hub-next"
+            aria-label="Next solution">
+      <span class="hub-arrow-label">Next</span>
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M9 4 L17 12 L9 20" stroke="currentColor"
+              stroke-width="1.8" fill="none"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <!-- Top-right · Finish (go to finale CTA) -->
+    <button type="button" class="hub-btn hub-finish" id="hub-finish"
+            aria-label="Finish and meet Sameer">
+      <span class="hub-btn-label">Meet Sameer</span>
+      <svg viewBox="0 0 14 14" width="10" height="10" aria-hidden="true">
+        <path d="M2 7 H11 M7 3 L11 7 L7 11" stroke="currentColor"
+              stroke-width="1.6" fill="none"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <!-- Bottom-left · Back to welcome -->
+    <button type="button" class="hub-btn hub-back" id="hub-back"
+            aria-label="Back to welcome">
+      <svg viewBox="0 0 14 14" width="10" height="10" aria-hidden="true">
+        <path d="M12 7 H3 M7 3 L3 7 L7 11" stroke="currentColor"
+              stroke-width="1.6" fill="none"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="hub-btn-label">Welcome</span>
+    </button>
+
+    <!-- Finale-stage · one button to return to the category browser
+         in case the user wants to revisit a solution before leaving. -->
+    <button type="button" class="hub-btn hub-explore-more" id="hub-explore-more"
+            aria-label="Explore more solutions">
+      <svg viewBox="0 0 14 14" width="10" height="10" aria-hidden="true">
+        <path d="M12 7 H3 M7 3 L3 7 L7 11" stroke="currentColor"
+              stroke-width="1.6" fill="none"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="hub-btn-label">Explore more</span>
+    </button>
+  </div>
+
+  <!-- ─── macOS Tahoe login · runs first. Shows the lock screen with
+       memoji, asks for the visitor's name, stores it to sessionStorage
+       so the Welcome beat downstream can greet them by name. Supports
+       ?for=Name URL param to pre-fill. Auto-dismisses on submit. ─── -->
+  <script src="macOSTahoeLogin.js?build=v08-c"></script>
+
+  <!-- ─── macOS Tahoe header · self-guards until the login is dismissed.
+       Kept out of the scroll experience so it doesn't compete with the
+       narrative. Will fully activate in the "Team Behind" phase later. ─── -->
+  <script src="macOSTahoeHeader.js?build=v10-b"></script>
+
+  <!-- ─── macOS dock · HIDDEN for now (doesn't match current theme).
+       Re-enable by uncommenting the script tag below when we redesign
+       the dock to fit the rest of the UI language. ─── -->
+  <!-- <script src="dock.js?build=v10-a"></script> -->
+
+  <!-- Earth engine · LIVES IN THIS FOLDER NOW (self-contained build) -->
+  <script type="module" src="./earth-scene.js"></script>
+  <script src="director.js?build=v11-a"></script>
+
+  <!-- PILL-FIRST OVERRIDE: skip login + scroll gate, jump straight to category hub -->
+  <script>
+  (function() {
+    function bootHub() {
+      // 1. Dismiss login instantly (no lock screen needed)
+      if (typeof macOSTahoeLogin !== 'undefined' && macOSTahoeLogin.dismiss) {
+        macOSTahoeLogin.dismiss();
+      }
+      // Set visitor name so welcome beat doesn't break
+      try { sessionStorage.setItem('__sg_visitor_name', 'Guest'); } catch(e) {}
+
+      // 2. Activate Hub immediately — bypasses scroll requirement
+      if (typeof Hub !== 'undefined' && Hub.activate) {
+        Hub.activate();
+        Hub.goToCategory(0);
+        return true;
+      }
+      return false;
+    }
+
+    // Try immediately, then wait for director.js to finish initializing
+    if (!bootHub()) {
+      let attempts = 0;
+      const interval = setInterval(() => {
+        if (bootHub() || ++attempts > 40) clearInterval(interval);
+      }, 150);
+    }
+
+    // 3. Override pill clicks: go directly to category, no scroll math
+    document.addEventListener('click', function(ev) {
+      const btn = ev.target.closest('.lb-pill');
+      if (!btn) return;
+      const i = Number(btn.dataset.idx);
+      if (!isNaN(i) && typeof Hub !== 'undefined' && Hub.goToCategory) {
+        ev.stopImmediatePropagation(); // block original scroll handler
+        Hub.goToCategory(i);
+      }
+    }, true); // capture phase so we intercept before director.js handler
+  })();
+  </script>
+
+</body>
+</html>
